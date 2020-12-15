@@ -1,3 +1,17 @@
+
+# misc imports ------------------------------------------------------------
+
+#' @importFrom rlang .data
+rlang::.data
+#' @importFrom rlang .env
+rlang::.env
+
+#' @importFrom magrittr %>%
+magrittr::`%>%`
+
+# .list_pages_in_category -------------------------------------------------
+
+
 #' List All Pages in a Category
 #'
 #' Wiktionary only returns 500 results at a time. Many categories have far more
@@ -38,6 +52,10 @@
   return(this_df)
 }
 
+
+# .clean_wiktionary_category_list -----------------------------------------
+
+
 #' Get the Members of a Category Return
 #'
 #' @param query_return List; the return from
@@ -48,10 +66,14 @@
 .clean_wiktionary_category_list <- function(query_return) {
   return(
     tibble::enframe(query_return$query$categorymembers) %>%
-      tidyr::unnest_wider(value) %>%
-      dplyr::select(-name)
+      tidyr::unnest_wider(.data$value) %>%
+      dplyr::select(-.data$name)
   )
 }
+
+
+# .fetch_word -------------------------------------------------------------
+
 
 #' Fetch the Content of a Wiktionary Word Page
 #'
@@ -69,4 +91,27 @@
       clean_response = TRUE
     )$wikitext$`*`
   )
+}
+
+# .fetch_english_word ---------------------------------------------------------
+
+#' Fetch the English Section of a Wiktionary Word Page
+#'
+#' @inheritParams .fetch_word
+#'
+#' @return Character; the "English" section of the word's page, in wikitext
+#'   format.
+#' @keywords internal
+.fetch_english_word <- function(word) {
+  all_content <- .fetch_word(word)
+  # Language sections are marked by "==<Language>==\n" headers.
+  language_sections <- stringr::str_split(
+    string = all_content,
+    pattern = "(^|\\n)==(?!=)"
+  )[[1]]
+  english_section <- stringr::str_subset(
+    string = language_sections,
+    pattern = "^English==\\n"
+  )
+  return(english_section)
 }
