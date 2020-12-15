@@ -1,3 +1,14 @@
+
+# misc imports ------------------------------------------------------------
+
+#' @importFrom rlang .data
+rlang::.data
+#' @importFrom rlang .env
+rlang::.env
+
+#' @importFrom magrittr %>%
+magrittr::`%>%`
+
 # .list_pages_in_category -------------------------------------------------
 
 
@@ -55,8 +66,8 @@
 .clean_wiktionary_category_list <- function(query_return) {
   return(
     tibble::enframe(query_return$query$categorymembers) %>%
-      tidyr::unnest_wider(value) %>%
-      dplyr::select(-name)
+      tidyr::unnest_wider(.data$value) %>%
+      dplyr::select(-.data$name)
   )
 }
 
@@ -82,7 +93,7 @@
   )
 }
 
-# .fetch_english_word -------------------------------------------------------------
+# .fetch_english_word ---------------------------------------------------------
 
 #' Fetch the English Section of a Wiktionary Word Page
 #'
@@ -93,7 +104,7 @@
 #' @keywords internal
 .fetch_english_word <- function(word) {
   all_content <- .fetch_word(word)
-  # Language sections are marked by "\n==<Language>==\n" headers.
+  # Language sections are marked by "==<Language>==\n" headers.
   language_sections <- stringr::str_split(
     string = all_content,
     pattern = "(^|\\n)==(?!=)"
