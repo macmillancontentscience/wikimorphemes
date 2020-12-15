@@ -1,6 +1,6 @@
 Package: wikimorphemes
 Title: Extracting Morphemes from Wiktionary Entries
-Version: 0.0.0.9000
+Version: 0.0.0.9001
 Authors@R: c(
     person("Jonathan", "Bratt", email = "jonathan.bratt@macmillan.com", 
            role = c("aut"),
