@@ -1,4 +1,4 @@
-test_that("we can retrive wikitionary data", {
+test_that("we can retrieve wikitionary data", {
   english <- .fetch_english_word("utmost")
   testthat::expect_match(english, regexp = "^English")
 
@@ -16,5 +16,4 @@ test_that("we can retrive wikitionary data", {
   testthat::expect_gte(nrow(page_list), 800)
   testthat::expect_equal(length(page_list), 3)
 })
-
 
