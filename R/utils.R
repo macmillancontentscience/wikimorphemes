@@ -94,11 +94,13 @@
 .fetch_english_word <- function(word) {
   all_content <- .fetch_word(word)
   # Language sections are marked by "\n==<Language>==\n" headers.
-  language_sections <- strsplit(x = all_content,
-                                split = "(?=\n==[^=])",
-                                perl = TRUE)[[1]]
-
-  english_section <- language_sections[grepl(pattern = "^English==\n",
-                                             x = language_sections)]
+  language_sections <- stringr::str_split(
+    string = all_content,
+    pattern = "(^|\\n)==(?!=)"
+  )[[1]]
+  english_section <- stringr::str_subset(
+    string = language_sections,
+    pattern = "^English==\\n"
+  )
   return(english_section)
 }
