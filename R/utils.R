@@ -115,3 +115,36 @@ magrittr::`%>%`
   )
   return(english_section)
 }
+
+# .detect_irregular_wt ---------------------------------------------------------
+
+#' Determine Membership in Irregular Category from Wikitext
+#'
+#' @param wt Character; wikitext resulting from a call to .fetch_english_word.
+#'
+#' @return TRUE if the word in question is in an irregular word category.
+#' @keywords internal
+.detect_irregular_wt <- function(wt) {
+  # I think all irregular categories start with "[[Category:English irregular"
+  # We likely will want to find specific categories later.
+  irreg_patt <- "[[Category:English irregular"
+
+  return(stringr::str_detect(string = wt, pattern = stringr::coll(irreg_patt)))
+}
+
+# .check_reconstructed_word -------------------------------------------------
+
+#' Check that Word Breakdown is Close to Original Word
+#'
+#' @param original_word Character; the word before breakdown.
+#' @param ... Character arguments that will be pasted together to reconstruct
+#'   word.
+#'
+#' @return TRUE if the reconstructed word is "close enough" to the original.
+#' @keywords internal
+.check_reconstructed_word <- function(original_word, ...) {
+  threshold <- 2 # seems right, so hard-coding for now
+  reconstructed_word <- paste0(..., collapse = "")
+  dist <- stringdist::stringdist(original_word, reconstructed_word)
+  return(dist <= threshold)
+}
