@@ -109,6 +109,10 @@ magrittr::`%>%`
 .fetch_english_word <- function(word) {
   all_content <- .fetch_word(word)
   # Language sections are marked by "==<Language>==\n" headers.
+  if (length(all_content) == 0) {
+    # probably no page for this word
+    return(character(0))
+  }
   language_sections <- stringr::str_split(
     string = all_content,
     pattern = "(^|\\n)==(?!=)"
