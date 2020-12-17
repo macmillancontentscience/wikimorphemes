@@ -40,6 +40,8 @@ process_word <- function(word) {
   if (identical(mor_break, current_word)|
       length(mor_break) == 0) { # zero length if word (piece) not found...
     # we're done.
+    # add names back on (really need to clean up whole naming thing)
+    names(current_word) <- "base_word"
     return(c(current_word, rev(endings)))
   }
   # otherwise, process all the word parts, starting from the beginning.
