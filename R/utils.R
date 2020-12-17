@@ -82,7 +82,7 @@ magrittr::`%>%`
 #' @return Character; the word's page, in wikitext format.
 #' @keywords internal
 .fetch_word <- function(word) {
-  return(
+  content <- tryCatch({
     WikipediR::page_content(
       "en",
       "wiktionary",
@@ -90,7 +90,11 @@ magrittr::`%>%`
       as_wikitext = TRUE,
       clean_response = TRUE
     )$wikitext$`*`
-  )
+  }, error = function(e) {
+    return(character(0)) # decide on this
+  })
+
+  return(content)
 }
 
 # .fetch_english_word ---------------------------------------------------------
