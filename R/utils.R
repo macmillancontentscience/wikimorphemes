@@ -148,3 +148,17 @@ magrittr::`%>%`
   dist <- stringdist::stringdist(original_word, reconstructed_word)
   return(dist <= threshold)
 }
+
+# .make_template_pattern -------------------------------------------------
+
+#' Construct Regex for Wiktionary Templates
+#'
+#' Currently works for templates of the "affix" type.
+#'
+#' @param type Character; specifies which template to construct.
+#'
+#' @return regular expression for detecting the given type.
+#' @keywords internal
+.make_template_pattern <- function(type) {
+  return(paste0("\\{\\{", type, "\\|en\\|([^}]+)\\}\\}"))
+}

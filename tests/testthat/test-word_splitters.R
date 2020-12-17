@@ -65,3 +65,55 @@ test_that("split_inflections works", {
   )
 
 })
+
+
+test_that("process_word works", {
+  testthat::expect_identical(
+    process_word("upendings"),
+    c(prefix = "up", base_word = "end", inflection = "ing", inflection = "s")
+  )
+
+  testthat::expect_identical(
+    process_word("disestablishmentarianism"),
+    c(prefix = "dis", base_word = "establish",
+      suffix = "ment", suffix = "arian", suffix = "ism")
+  )
+
+  testthat::expect_identical(
+    process_word("unaffable"),
+    c(prefix = "un", base_word = "affable")
+  )
+
+  testthat::expect_identical(
+    process_word("pesticides"),
+    c(base_word = "pest", interfix = "i", suffix = "cide", inflection = "s")
+  )
+
+  testthat::expect_identical(
+    process_word("neurogenic"),
+    # Think about breakdown of "genic" into "gene ic". Genic was aready marked
+    # as a suffix; should it be broken further?
+    c(prefix = "neuro", base_word = "gene", suffix = "ic")
+  )
+
+  testthat::expect_identical(
+    process_word("bedewed"),
+    c(prefix = "be", base_word = "dew", inflection = "ed")
+  )
+
+  testthat::expect_identical(
+    process_word("rainbow"),
+    c(base_word = "rain", base_word = "bow")
+  )
+
+  testthat::expect_identical(
+    process_word("clearinghouse"),
+    c(base_word = "clear", inflection = "ing", base_word = "house")
+  )
+
+  testthat::expect_identical(
+    process_word("passersby"),
+    c(base_word = "pass", suffix = "er", base_word = "by", inflection = "s")
+  )
+})
+
