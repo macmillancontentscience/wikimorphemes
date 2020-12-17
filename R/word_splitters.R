@@ -20,7 +20,6 @@ process_word <- function(word) {
   endings <- character(0)
   # first, do endings repeatedly till no change
   current_word <- word
-  names(current_word) <- NULL
   while(changed) {
     inf_break <- split_inflections(current_word)
     if (identical(inf_break, current_word) |
@@ -39,10 +38,13 @@ process_word <- function(word) {
   mor_break <- split_morphemes(current_word)
   if (identical(mor_break, current_word)|
       length(mor_break) == 0) { # zero length if word (piece) not found...
-    # we're done.
-    # add names back on (really need to clean up whole naming thing)
-    names(current_word) <- "base_word"
-    return(c(current_word, rev(endings)))
+    # we're done. add names back on IF endings were broken off (really need to
+    # clean up whole naming thing)
+    to_return <- c(current_word, rev(endings))
+    if (length(endings) > 0) {
+      names(to_return)[names(to_return) ==""] <- "base_word"
+    }
+    return(to_return)
   }
   # otherwise, process all the word parts, starting from the beginning.
   all_pieces <- purrr::map(mor_break, function(bw) {
