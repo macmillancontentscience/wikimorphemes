@@ -82,6 +82,15 @@ magrittr::`%>%`
 #' @return Character; the word's page, in wikitext format.
 #' @keywords internal
 .fetch_word <- function(word) {
+  # Temporary hack to use wk download...
+  if ("all_wiktionary_en" %in% ls(envir = .GlobalEnv)) {
+    # message("using wiktionary dump from global environment.")
+    all_wiktionary_en <- get("all_wiktionary_en", envir = .GlobalEnv)
+    content <- all_wiktionary_en %>%
+      dplyr::filter(.data$title == .env$word) %>%
+      dplyr::pull(text)
+    return(content)
+  }
   content <- tryCatch({
     WikipediR::page_content(
       "en",

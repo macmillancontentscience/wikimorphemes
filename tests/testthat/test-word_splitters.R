@@ -115,5 +115,16 @@ test_that("process_word works", {
     process_word("passersby"),
     c(base_word = "pass", suffix = "er", base_word = "by", inflection = "s")
   )
+
+  # Still thinking about this one.
+  # testthat::expect_identical(
+  #   process_word("Christmas"),
+  #   c(base_word = "Christ", suffix = "mas")
+  # )
+
+  testthat::expect_identical(
+    process_word("every"),
+    c("base_word" = "every")
+  )
 })
 

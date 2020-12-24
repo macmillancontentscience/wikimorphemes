@@ -13,10 +13,6 @@ process_word(word)
 Character; the word split into pieces.
 }
 \description{
-Recursively splits a word into constituent pieces, based on Wiktionary
-annotations.There are two main categories of word pieces used: inflections
-(standard verb/noun/comparative adjective forms, defined in practice here as
-endings identified in Wiktionary by inflectional function without reference
-to the actual form of the ending) and morphemes (typically denoted in
-Wiktionary by etymology templates).
+Splits a word into constituent pieces. Wrapper around
+\code{\link{process_word_recursive}}, with some postprocessing.
 }

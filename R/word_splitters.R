@@ -3,12 +3,8 @@
 
 #' Split a Word into Pieces
 #'
-#' Recursively splits a word into constituent pieces, based on Wiktionary
-#' annotations.There are two main categories of word pieces used: inflections
-#' (standard verb/noun/comparative adjective forms, defined in practice here as
-#' endings identified in Wiktionary by inflectional function without reference
-#' to the actual form of the ending) and morphemes (typically denoted in
-#' Wiktionary by etymology templates).
+#' Splits a word into constituent pieces. Wrapper around
+#' \code{\link{process_word_recursive}}, with some postprocessing.
 #'
 #' @param word Character; a word to process.
 #'
@@ -16,6 +12,34 @@
 #' @export
 #' @examples
 process_word <- function(word) {
+  processed_word <- process_word_recursive(word)
+  # I think this is the place where we'll want to remove hyphens?
+  # Fill in missing names (should only be missing for single words by now).
+  names(processed_word)[names(processed_word) == ""] <- "base_word"
+  return(processed_word)
+}
+
+
+
+
+# process_word_recursive ------------------------------------------------------
+
+
+#' Split a Word into Pieces
+#'
+#' Recursively splits a word into constituent pieces, based on Wiktionary
+#' annotations.There are two main categories of word pieces used: inflections
+#' (standard verb/noun/comparative adjective forms, defined in practice here as
+#' endings identified in Wiktionary by inflectional function without reference
+#' to the actual form of the ending) and morphemes (typically denoted in
+#' Wiktionary by etymology templates).
+#'
+#' @inheritParams process_word
+#'
+#' @return Character; the word split into pieces.
+#' @export
+#' @examples
+process_word_recursive <- function(word) {
   changed <- TRUE
   endings <- character(0)
   # first, do endings repeatedly till no change
@@ -36,9 +60,9 @@ process_word <- function(word) {
   names(endings) <- rep("inflection", length(endings))
   # next, break into morphemes
   mor_break <- split_morphemes(current_word)
-  if (identical(mor_break, current_word)|
+  if (identical(mor_break, current_word) |
       length(mor_break) == 0) { # zero length if word (piece) not found...
-    # we're done. add names back on IF endings were broken off (really need to
+    # we're done. add names back on IFF endings were broken off (really need to
     # clean up whole naming thing)
     to_return <- c(current_word, rev(endings))
     if (length(endings) > 0) {
@@ -48,7 +72,7 @@ process_word <- function(word) {
   }
   # otherwise, process all the word parts, starting from the beginning.
   all_pieces <- purrr::map(mor_break, function(bw) {
-    process_word(bw[[1]])
+    process_word_recursive(bw[[1]])
   })
   processed_word <- c(unlist(all_pieces), rev(endings))
   # "fix" names by tossing everything before the last "."...and removing digits.
@@ -153,6 +177,12 @@ split_morphemes <- function(word) {
   # Take out empty cases. This feels too messy.
   candidate_breakdowns <- candidate_breakdowns[
     purrr::map_lgl(candidate_breakdowns, rlang::has_length)
+    ]
+  # Take out candidates that are too far from original
+  candidate_breakdowns <- candidate_breakdowns[
+    purrr::map_lgl(candidate_breakdowns, function(bd) {
+      .check_reconstructed_word(word, bd)
+    })
     ]
 
   if (length(candidate_breakdowns) == 0) {
