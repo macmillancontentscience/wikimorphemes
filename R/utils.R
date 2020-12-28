@@ -161,7 +161,11 @@ magrittr::`%>%`
 #' @keywords internal
 .check_reconstructed_word <- function(original_word, ...) {
   threshold <- 2 # seems right, so hard-coding for now
-  reconstructed_word <- paste0(..., collapse = "")
+  # take out hyphens (maybe all non-alpha?)
+  #TODO: decide how to handle non-alpha characters in original words.
+  breakdown <- stringr::str_remove_all(c(...), "\\-")
+
+  reconstructed_word <- paste0(breakdown, collapse = "")
   dist <- stringdist::stringdist(original_word, reconstructed_word)
   return(dist <= threshold)
 }

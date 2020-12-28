@@ -12,8 +12,12 @@
 #' @export
 #' @examples
 process_word <- function(word) {
-  processed_word <- process_word_recursive(word)
-  # I think this is the place where we'll want to remove hyphens?
+  processed_word_0 <- process_word_recursive(word)
+  # I think this is the place where we'll want to remove hyphens? But then we
+  # need to add the names back on. Ugh, need to refactor all the name stuff.
+  processed_word <- stringr::str_remove_all(processed_word_0, "\\-")
+  names(processed_word) <- names(processed_word_0)
+
   # Fill in missing names (should only be missing for single words by now).
   names(processed_word)[names(processed_word) == ""] <- "base_word"
   return(processed_word)
@@ -278,8 +282,8 @@ split_morphemes <- function(word) {
     name_list[stringr::str_ends(breakdown, "-")] <- "prefix"
     name_list[stringr::str_ends(breakdown, "-") &
                 stringr::str_starts(breakdown, "-")] <- "interfix"
-    # now remove hyphens from breakdown
-    breakdown <- stringr::str_remove_all(breakdown, "\\-")
+    # # now remove hyphens from breakdown. No, not now.
+    # breakdown <- stringr::str_remove_all(breakdown, "\\-")
     names(breakdown) <- name_list
   }
 
