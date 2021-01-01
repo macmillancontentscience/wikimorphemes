@@ -92,8 +92,9 @@ test_that("process_word works", {
   testthat::expect_identical(
     process_word("neurogenic"),
     # Think about breakdown of "genic" into "gene ic". Genic was aready marked
-    # as a suffix; should it be broken further?
-    c(prefix = "neuro", base_word = "gene", suffix = "ic")
+    # as a suffix; should it be broken further? For now, "-genic" is *not* split
+    # further.
+    c(prefix = "neuro", suffix = "genic")
   )
 
   testthat::expect_identical(
@@ -116,11 +117,11 @@ test_that("process_word works", {
     c(base_word = "pass", suffix = "er", base_word = "by", inflection = "s")
   )
 
-  # Still thinking about this one.
-  # testthat::expect_identical(
-  #   process_word("Christmas"),
-  #   c(base_word = "Christ", suffix = "mas")
-  # )
+  # DON'T process "-mas" into "ma s"
+  testthat::expect_identical(
+    process_word("Christmas"),
+    c(base_word = "Christ", suffix = "mas")
+  )
 
   testthat::expect_identical(
     process_word("every"),

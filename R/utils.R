@@ -83,14 +83,14 @@ magrittr::`%>%`
 #' @keywords internal
 .fetch_word <- function(word) {
   # Temporary hack to use wk download...
-  if ("all_wiktionary_en" %in% ls(envir = .GlobalEnv)) {
+  if ("all_wiktionary_en" %in% ls(envir = .GlobalEnv)) { # nocov start
     # message("using wiktionary dump from global environment.")
     all_wiktionary_en <- get("all_wiktionary_en", envir = .GlobalEnv)
     content <- all_wiktionary_en %>%
       dplyr::filter(.data$title == .env$word) %>%
       dplyr::pull(text)
     return(content)
-  }
+  }   # nocov end
   content <- tryCatch({
     WikipediR::page_content(
       "en",

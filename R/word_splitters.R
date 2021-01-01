@@ -219,6 +219,8 @@ split_morphemes <- function(word) {
   breakdown <- stringr::str_subset(string = breakdown,
                                    pattern = "=", negate = TRUE)
   if (!is.na(match)) {
+    # At this point in the process, apply standard that prefixes end in "-"
+    breakdown[[1]] <- paste0(breakdown[[1]], "-")
     names(breakdown) <- c("prefix", "base_word") # standardize and control..
   }
 
@@ -246,6 +248,8 @@ split_morphemes <- function(word) {
   breakdown <- stringr::str_subset(string = breakdown,
                                    pattern = "=", negate = TRUE)
   if (!is.na(match)) {
+    # At this point in the process, apply standard that suffixes begin with "-"
+    breakdown[[2]] <- paste0("-", breakdown[[2]])
     names(breakdown) <- c("base_word", "suffix") # standardize and control...
   }
 
@@ -317,11 +321,19 @@ split_morphemes <- function(word) {
   if (!is.na(match)) {
     # if only two pieces, should be prefix + suffix
     if (length(breakdown) == 2) {
+      # At this point in the process, apply standard that suffixes begin with
+      # "-", and prefixes end with "-"
+      breakdown[[1]] <- paste0(breakdown[[1]], "-")
+      breakdown[[2]] <- paste0("-", breakdown[[2]])
       names(breakdown) <- c("prefix", "suffix") # standardize and control...
 
-    } else {
+    } else { # nocov start
+      # I can't find an example that tests this. "bedewed" uses this template,
+      # but gets caught by inflection splitter first.
+      breakdown[[1]] <- paste0(breakdown[[1]], "-")
+      breakdown[[3]] <- paste0("-", breakdown[[3]])
       names(breakdown) <- c("prefix", "base_word", "suffix")
-    }
+    } # nocov end
   }
 
   return(breakdown)
