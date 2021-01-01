@@ -88,7 +88,7 @@ magrittr::`%>%`
     all_wiktionary_en <- get("all_wiktionary_en", envir = .GlobalEnv)
     content <- all_wiktionary_en %>%
       dplyr::filter(.data$title == .env$word) %>%
-      dplyr::pull(text)
+      dplyr::pull(.data$text)
     return(content)
   }   # nocov end
   content <- tryCatch({
