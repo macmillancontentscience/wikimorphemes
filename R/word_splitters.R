@@ -71,23 +71,6 @@ process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
     ending <- inf_break[["ending"]]
   }
 
-
-  # current_word <- word
-  # while(changed) {
-  #   inf_break <- split_inflections(current_word)
-  #   if (identical(inf_break, current_word) |
-  #       length(inf_break) == 0) { # zero length if word (piece) not found
-  #     changed <- FALSE
-  #   } else {
-  #     # names are "safe" to use as keys at this point.
-  #     current_word <- inf_break[["base_word"]]
-  #     # current_word <- inf_break[[1]]
-  #     endings[length(endings) + 1] <- inf_break[["ending"]]
-  #     # endings[length(endings) + 1] <- inf_break[[2]]
-  #   }
-  # }
-  # names(endings) <- rep("inflection", length(endings))
-
   # next, break current word into morphemes
   mor_break <- split_morphemes(current_word)
   if (identical(mor_break, current_word) |
@@ -133,7 +116,7 @@ split_inflections <- function(word) {
   english_content <- .fetch_english_word(word)
   if (length(english_content) == 0) {
     # not an english word
-    return(character(0)) # or NA_character?
+    return(character(0)) # or NA_character? Or just return the word
   }
 
   if (.detect_irregular_wt(english_content)) {
