@@ -4,10 +4,14 @@
 \alias{process_word_recursive}
 \title{Split a Word into Pieces}
 \usage{
-process_word_recursive(word)
+process_word_recursive(word, current_depth = 1, max_depth = 30)
 }
 \arguments{
 \item{word}{Character; a word to process.}
+
+\item{current_depth}{Integer; current recursion depth.}
+
+\item{max_depth}{Integer; maximum recursion depth.}
 }
 \value{
 Character; the word split into pieces.

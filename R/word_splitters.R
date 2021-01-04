@@ -18,8 +18,13 @@ process_word <- function(word) {
   processed_word <- stringr::str_remove_all(processed_word_0, "\\-")
   names(processed_word) <- names(processed_word_0)
 
-  # Fill in missing names (should only be missing for single words by now).
-  names(processed_word)[names(processed_word) == ""] <- "base_word"
+  # Fill in missing names for single words.
+  # Really need to refactor all the name handling here.
+  if (length(processed_word) == 1) {
+    names(processed_word) <- "base_word"
+  }
+  # ...also fill in any other missing names (haven't caught all the edge cases)
+  names(processed_word)[names(processed_word) %in% c("", NA)] <- "base_word"
   return(processed_word)
 }
 
@@ -39,46 +44,73 @@ process_word <- function(word) {
 #' Wiktionary by etymology templates).
 #'
 #' @inheritParams process_word
+#' @param current_depth Integer; current recursion depth.
+#' @param max_depth Integer; maximum recursion depth.
 #'
 #' @return Character; the word split into pieces.
 #' @export
 #' @examples
-process_word_recursive <- function(word) {
-  changed <- TRUE
-  endings <- character(0)
-  # first, do endings repeatedly till no change
-  current_word <- word
-  while(changed) {
-    inf_break <- split_inflections(current_word)
-    if (identical(inf_break, current_word) |
-        length(inf_break) == 0) { # zero length if word (piece) not found
-      changed <- FALSE
-    } else {
-      # names are "safe" to use as keys at this point.
-      current_word <- inf_break[["base_word"]]
-      # current_word <- inf_break[[1]]
-      endings[length(endings) + 1] <- inf_break[["ending"]]
-      # endings[length(endings) + 1] <- inf_break[[2]]
-    }
+process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
+  if (current_depth > max_depth) {
+    message("maximum recursion depth of ", max_depth, " reached.")
+    return(word)
   }
-  names(endings) <- rep("inflection", length(endings))
-  # next, break into morphemes
+  inflection_changed <- TRUE
+  morpheme_changed <- TRUE
+  ending <- character(0)
+  # first, do endings repeatedly till no change. Nope, just do once, then
+  # recurse. I think.
+  inf_break <- split_inflections(word)
+  if (identical(inf_break, word) |
+      length(inf_break) == 0) { # zero length if word (piece) not found
+    inflection_changed <- FALSE
+    current_word <- word
+  } else {
+    # names are "safe" to use as keys at this point.
+    current_word <- inf_break[["base_word"]]
+    ending <- inf_break[["ending"]]
+  }
+
+
+  # current_word <- word
+  # while(changed) {
+  #   inf_break <- split_inflections(current_word)
+  #   if (identical(inf_break, current_word) |
+  #       length(inf_break) == 0) { # zero length if word (piece) not found
+  #     changed <- FALSE
+  #   } else {
+  #     # names are "safe" to use as keys at this point.
+  #     current_word <- inf_break[["base_word"]]
+  #     # current_word <- inf_break[[1]]
+  #     endings[length(endings) + 1] <- inf_break[["ending"]]
+  #     # endings[length(endings) + 1] <- inf_break[[2]]
+  #   }
+  # }
+  # names(endings) <- rep("inflection", length(endings))
+
+  # next, break current word into morphemes
   mor_break <- split_morphemes(current_word)
   if (identical(mor_break, current_word) |
       length(mor_break) == 0) { # zero length if word (piece) not found...
-    # we're done. add names back on IFF endings were broken off (really need to
-    # clean up whole naming thing)
-    to_return <- c(current_word, rev(endings))
-    if (length(endings) > 0) {
-      names(to_return)[names(to_return) ==""] <- "base_word"
+    morpheme_changed <- FALSE
+  }
+  if (!morpheme_changed & !inflection_changed) {
+    # Nothing changed this round, so we're done. Add names back on IFF endings
+    # were broken off (really need to clean up whole naming thing)
+    to_return <- c(current_word, ending)
+    if (length(ending) > 0) {
+      names(to_return) <- c("base_word", "inflection")
     }
     return(to_return)
   }
   # otherwise, process all the word parts, starting from the beginning.
   all_pieces <- purrr::map(mor_break, function(bw) {
-    process_word_recursive(bw[[1]])
+    process_word_recursive(bw[[1]],
+                           current_depth = current_depth + 1,
+                           max_depth = max_depth)
   })
-  processed_word <- c(unlist(all_pieces), rev(endings))
+  names(ending) <- rep("inflection", length(ending)) # ugh, hacky
+  processed_word <- c(unlist(all_pieces), ending)
   # "fix" names by tossing everything before the last "."...and removing digits.
   names(processed_word) <- stringr::str_remove_all(names(processed_word),
                                                    "(.*\\.)|[0-9]*")
@@ -132,7 +164,8 @@ split_inflections <- function(word) {
     ending <- patterns_endings[[patt]]
     base_word <- stringr::str_match(english_content, patt)[[2]]
     if (!is.na(base_word)) {
-      if (.check_reconstructed_word(word, base_word, ending)) {
+      if (.check_reconstructed_word(word, base_word, ending) &
+          .check_nonexplosive_word(word, base_word, ending)) {
         breakdown <- c("base_word" = base_word, "ending" = ending)
         candidate_breakdowns[[length(candidate_breakdowns)+1]] <- breakdown
       }
@@ -182,10 +215,11 @@ split_morphemes <- function(word) {
   candidate_breakdowns <- candidate_breakdowns[
     purrr::map_lgl(candidate_breakdowns, rlang::has_length)
     ]
-  # Take out candidates that are too far from original
+  # Take out candidates that are too far from original, or explosive.
   candidate_breakdowns <- candidate_breakdowns[
     purrr::map_lgl(candidate_breakdowns, function(bd) {
-      .check_reconstructed_word(word, bd)
+      .check_reconstructed_word(word, bd) &
+        .check_nonexplosive_word(word, bd)
     })
     ]
 
@@ -209,7 +243,7 @@ split_morphemes <- function(word) {
 #' @return Character; the word with prefixes split off.
 #' @keywords internal
 .split_prefixes_wt <- function(wt) {
-  # wt <- .fetch_english_word("undo")
+  # wt <- .fetch_english_word("object")
   prefix_patt <- .make_template_pattern("pre(fix)?")
   # Take 3rd element to account for optional capturing group: (fix)?
   match <- stringr::str_match(wt, prefix_patt)[[3]]
@@ -219,6 +253,10 @@ split_morphemes <- function(word) {
   breakdown <- stringr::str_subset(string = breakdown,
                                    pattern = "=", negate = TRUE)
   if (!is.na(match)) {
+    # `breakdown` should be length-2, but template might be badly formatted.
+    if (length(breakdown) != 2) {
+      return(character(0))
+    }
     # At this point in the process, apply standard that prefixes end in "-"
     breakdown[[1]] <- paste0(breakdown[[1]], "-")
     names(breakdown) <- c("prefix", "base_word") # standardize and control..
@@ -248,6 +286,10 @@ split_morphemes <- function(word) {
   breakdown <- stringr::str_subset(string = breakdown,
                                    pattern = "=", negate = TRUE)
   if (!is.na(match)) {
+    # `breakdown` should be length-2, but template might be badly formatted.
+    if (length(breakdown) != 2) {
+      return(character(0))
+    }
     # At this point in the process, apply standard that suffixes begin with "-"
     breakdown[[2]] <- paste0("-", breakdown[[2]])
     names(breakdown) <- c("base_word", "suffix") # standardize and control...
@@ -327,13 +369,15 @@ split_morphemes <- function(word) {
       breakdown[[2]] <- paste0("-", breakdown[[2]])
       names(breakdown) <- c("prefix", "suffix") # standardize and control...
 
-    } else { # nocov start
+    } else if (length(breakdown) == 3) { # nocov start
       # I can't find an example that tests this. "bedewed" uses this template,
       # but gets caught by inflection splitter first.
       breakdown[[1]] <- paste0(breakdown[[1]], "-")
       breakdown[[3]] <- paste0("-", breakdown[[3]])
       names(breakdown) <- c("prefix", "base_word", "suffix")
-    } # nocov end
+    } else {
+      return(character(0))
+    }  # nocov end
   }
 
   return(breakdown)

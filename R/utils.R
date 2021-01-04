@@ -91,6 +91,7 @@ magrittr::`%>%`
       dplyr::pull(.data$text)
     return(content)
   }   # nocov end
+  message("hitting wiktionary API!")
   content <- tryCatch({
     WikipediR::page_content(
       "en",
@@ -169,6 +170,27 @@ magrittr::`%>%`
   dist <- stringdist::stringdist(original_word, reconstructed_word)
   return(dist <= threshold)
 }
+
+# .check_nonexplosive_word -------------------------------------------------
+
+#' Check that Word Breakdown doesn't Contain Original Word
+#'
+#' @param original_word Character; the word before breakdown.
+#' @param ... Character pieces of the word after breakdown.
+#'
+#' @return TRUE if the word breakdown does not contain the original word as a
+#'   piece.
+#' @keywords internal
+.check_nonexplosive_word <- function(original_word, ...) {
+  breakdown <- list(...)
+  # not sure whether I need to allow for a single word piece that is the
+  # original word. We can probably reject that, too.
+  if (any(breakdown == original_word)) {
+    return(FALSE)
+  }
+  return(TRUE)
+}
+
 
 # .make_template_pattern -------------------------------------------------
 

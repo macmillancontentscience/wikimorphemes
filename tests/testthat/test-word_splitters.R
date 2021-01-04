@@ -125,7 +125,18 @@ test_that("process_word works", {
 
   testthat::expect_identical(
     process_word("every"),
-    c("base_word" = "every")
+    c(base_word = "every")
+  )
+
+  testthat::expect_identical(
+    process_word("lenses"),
+    c(base_word = "lens", inflection = "s")
+  )
+
+  # check recursion limit
+  testthat::expect_message(
+    process_word_recursive("lovingly", max_depth = 1),
+    "maximum recursion depth of 1 reached"
   )
 })
 
