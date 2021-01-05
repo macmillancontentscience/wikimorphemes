@@ -163,7 +163,7 @@ magrittr::`%>%`
 .check_reconstructed_word <- function(original_word, ...) {
   threshold <- 2 # seems right, so hard-coding for now
   # take out hyphens (maybe all non-alpha?)
-  #TODO: decide how to handle non-alpha characters in original words.
+  # https://github.com/jonthegeek/wikimorphemes/issues/8
   breakdown <- stringr::str_remove_all(c(...), "\\-")
 
   reconstructed_word <- paste0(breakdown, collapse = "")
@@ -185,7 +185,7 @@ magrittr::`%>%`
   breakdown <- list(...)
   # not sure whether I need to allow for a single word piece that is the
   # original word. We can probably reject that, too.
-  if (any(breakdown == original_word)) {
+  if (original_word %in% breakdown ) {
     return(FALSE)
   }
   return(TRUE)

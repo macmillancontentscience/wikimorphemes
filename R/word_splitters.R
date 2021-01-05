@@ -6,7 +6,7 @@
 #' Splits a word into constituent pieces. Wrapper around
 #' \code{\link{process_word_recursive}}, with some postprocessing.
 #'
-#' @param word Character; a word to process.
+#' @inheritParams process_word_recursive
 #'
 #' @return Character; the word split into pieces.
 #' @export
@@ -38,13 +38,13 @@ process_word <- function(word) {
 #' Split a Word into Pieces
 #'
 #' Recursively splits a word into constituent pieces, based on Wiktionary
-#' annotations.There are two main categories of word pieces used: inflections
+#' annotations. There are two main categories of word pieces used: inflections
 #' (standard verb/noun/comparative adjective forms, defined in practice here as
 #' endings identified in Wiktionary by inflectional function without reference
 #' to the actual form of the ending) and morphemes (typically denoted in
 #' Wiktionary by etymology templates).
 #'
-#' @inheritParams process_word
+#' @param word Character; a word to process.
 #' @param current_depth Integer; current recursion depth.
 #' @param max_depth Integer; maximum recursion depth.
 #'
@@ -52,6 +52,7 @@ process_word <- function(word) {
 #' @export
 #' @examples
 process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
+  # https://github.com/jonthegeek/wikimorphemes/issues/9
   if (current_depth > max_depth) {
     message("maximum recursion depth of ", max_depth, " reached.")
     return(word)
@@ -59,8 +60,6 @@ process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
   inflection_changed <- TRUE
   morpheme_changed <- TRUE
   ending <- character(0)
-  # first, do endings repeatedly till no change. Nope, just do once, then
-  # recurse. I think.
   inf_break <- split_inflections(word)
   if (identical(inf_break, word) |
       length(inf_break) == 0) { # zero length if word (piece) not found
@@ -89,11 +88,12 @@ process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
     return(to_return)
   }
   # otherwise, process all the word parts, starting from the beginning.
-  all_pieces <- purrr::map(mor_break, function(bw) {
-    process_word_recursive(bw[[1]],
-                           current_depth = current_depth + 1,
-                           max_depth = max_depth)
-  })
+  all_pieces <- purrr::map(
+    mor_break,
+    process_word_recursive,
+    current_depth = current_depth + 1,
+    max_depth = max_depth
+  )
   # ugh, hacky: https://github.com/jonthegeek/wikimorphemes/issues/7
   names(ending) <- rep("inflection", length(ending))
   processed_word <- c(unlist(all_pieces), ending)
@@ -119,7 +119,8 @@ split_inflections <- function(word) {
   english_content <- .fetch_english_word(word)
   if (length(english_content) == 0) {
     # not an english word
-    return(character(0)) # or NA_character? Or just return the word
+    # return word here ? https://github.com/jonthegeek/wikimorphemes/issues/10
+    return(character(0))
   }
 
   if (.detect_irregular_wt(english_content)) {
@@ -130,6 +131,7 @@ split_inflections <- function(word) {
   # Wiktionary has a variety of templates for various standard endings. In some
   # cases there are multiple ways to denote word structure. Maybe later make
   # utility function to maintain these?
+  # https://github.com/jonthegeek/wikimorphemes/issues/11
   patterns_endings <- c(
     # <pattern_to_detect> = <standard_ending>
     "\\{\\{plural of\\|en\\|([^}]+)\\}\\}" = "s",
@@ -162,6 +164,7 @@ split_inflections <- function(word) {
   }
   unique_breakdowns <- unique(candidate_breakdowns)
   if (length(unique_breakdowns) > 1) {
+    # https://github.com/jonthegeek/wikimorphemes/issues/14
     warning("more than one unique breakdown found for: ", word) # nocov
   }
   return(unique_breakdowns[[1]])
@@ -182,10 +185,12 @@ split_morphemes <- function(word) {
   # I might want to make these functions act on the wikitext, not the actual
   # word, so that we can limit calls to wiktionary API. Or maybe somehow cache
   # results in session?
+  # https://github.com/jonthegeek/wikimorphemes/issues/13
   english_content <- .fetch_english_word(word)
   if (length(english_content) == 0) {
     # not an english word
-    return(character(0)) # or NA_character?
+    #  https://github.com/jonthegeek/wikimorphemes/issues/10
+    return(character(0))
   }
 
   candidate_breakdowns <- list(
@@ -214,6 +219,7 @@ split_morphemes <- function(word) {
   }
   unique_breakdowns <- unique(candidate_breakdowns)
   if (length(unique_breakdowns) > 1) {
+    # https://github.com/jonthegeek/wikimorphemes/issues/14
     warning("more than one unique breakdown found for: ", word) # nocov
   }
   return(unique_breakdowns[[1]])
@@ -241,6 +247,7 @@ split_morphemes <- function(word) {
   if (!is.na(match)) {
     # `breakdown` should be length-2, but template might be badly formatted.
     if (length(breakdown) != 2) {
+      #  https://github.com/jonthegeek/wikimorphemes/issues/10
       return(character(0))
     }
     # At this point in the process, apply standard that prefixes end in "-"
@@ -275,6 +282,7 @@ split_morphemes <- function(word) {
   if (!is.na(match)) {
     # `breakdown` should be length-2, but template might be badly formatted.
     if (length(breakdown) != 2) {
+      #  https://github.com/jonthegeek/wikimorphemes/issues/10
       return(character(0))
     }
     # At this point in the process, apply standard that suffixes begin with "-"
@@ -307,16 +315,20 @@ split_morphemes <- function(word) {
   # take out named parameters (marked with "=")
   breakdown <- stringr::str_subset(string = breakdown,
                                    pattern = "=", negate = TRUE)
-  if (!is.na(match)) {
+  if (!is.na(match)) { #  https://github.com/jonthegeek/wikimorphemes/issues/10
     # This one is tricky. If a piece ends with "-", assign name "prefix". If
     # starts with "-", assign name "suffix". If "-" on both sides, "interfix".
     # If no "-", "base_word". (Standardize and control these somewhere.)
+    # https://github.com/jonthegeek/wikimorphemes/issues/7
     name_list <- rep("base_word", length(breakdown))
     name_list[stringr::str_starts(breakdown, "-")] <- "suffix"
     name_list[stringr::str_ends(breakdown, "-")] <- "prefix"
     name_list[stringr::str_ends(breakdown, "-") &
                 stringr::str_starts(breakdown, "-")] <- "interfix"
-    # # now remove hyphens from breakdown. No, not now.
+    # # now remove hyphens from breakdown. No, not now. We keep hyphens in
+    # word pieces at this point so that in the recursive breakdown
+    # prefixes, etc get processed appropriately (e.g. so "-mas" doesn't
+    # turn into "ma s").
     # breakdown <- stringr::str_remove_all(breakdown, "\\-")
     names(breakdown) <- name_list
   }
@@ -348,7 +360,7 @@ split_morphemes <- function(word) {
   # take out named parameters (marked with "=")
   breakdown <- stringr::str_subset(string = breakdown,
                                    pattern = "=", negate = TRUE)
-  if (!is.na(match)) {
+  if (!is.na(match)) { #  https://github.com/jonthegeek/wikimorphemes/issues/10
     # if only two pieces, should be prefix + suffix
     if (length(breakdown) == 2) {
       # At this point in the process, apply standard that suffixes begin with
@@ -366,6 +378,7 @@ split_morphemes <- function(word) {
       names(breakdown) <- c("prefix", "base_word", "suffix")
     } else {
       return(character(0))
+      #https://github.com/jonthegeek/wikimorphemes/issues/10
     }  # nocov end
   }
 
@@ -394,7 +407,7 @@ split_morphemes <- function(word) {
   # take out named parameters (marked with "=")
   breakdown <- stringr::str_subset(string = breakdown,
                                    pattern = "=", negate = TRUE)
-  if (!is.na(match)) {
+  if (!is.na(match)) { #  https://github.com/jonthegeek/wikimorphemes/issues/10
     # all components should be tagged as base words
     # !!  Find a better way that doesn't involve repeated names?
     names(breakdown) <- rep("base_word", length(breakdown))
@@ -437,7 +450,7 @@ split_morphemes <- function(word) {
     names(breakdown) <- rep("base_word", length(breakdown))
     return(breakdown)
   }
-
+  #  https://github.com/jonthegeek/wikimorphemes/issues/10
   return(character(0))
 }
 
