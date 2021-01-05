@@ -82,16 +82,6 @@ magrittr::`%>%`
 #' @return Character; the word's page, in wikitext format.
 #' @keywords internal
 .fetch_word <- function(word) {
-  # Temporary hack to use wk download...
-  if ("all_wiktionary_en" %in% ls(envir = .GlobalEnv)) { # nocov start
-    # message("using wiktionary dump from global environment.")
-    all_wiktionary_en <- get("all_wiktionary_en", envir = .GlobalEnv)
-    content <- all_wiktionary_en %>%
-      dplyr::filter(.data$title == .env$word) %>%
-      dplyr::pull(.data$text)
-    return(content)
-  }   # nocov end
-  message("hitting wiktionary API!")
   content <- tryCatch({
     WikipediR::page_content(
       "en",
@@ -117,6 +107,16 @@ magrittr::`%>%`
 #'   format.
 #' @keywords internal
 .fetch_english_word <- function(word) {
+  # Temporary hack to use wk download...
+  if ("all_wiktionary_en" %in% ls(envir = .GlobalEnv)) { # nocov start
+    # message("using wiktionary dump from global environment.")
+    all_wiktionary_en <- get("all_wiktionary_en", envir = .GlobalEnv)
+    content <- all_wiktionary_en %>%
+      dplyr::filter(.data$title == .env$word) %>%
+      dplyr::pull(.data$text)
+    return(content)
+  }   # nocov end
+  message("hitting wiktionary API!")
   all_content <- .fetch_word(word)
   # Language sections are marked by "==<Language>==\n" headers.
   if (length(all_content) == 0) {
