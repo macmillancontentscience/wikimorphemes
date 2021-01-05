@@ -15,11 +15,12 @@ process_word <- function(word) {
   processed_word_0 <- process_word_recursive(word)
   # I think this is the place where we'll want to remove hyphens? But then we
   # need to add the names back on. Ugh, need to refactor all the name stuff.
+  # https://github.com/jonthegeek/wikimorphemes/issues/7
   processed_word <- stringr::str_remove_all(processed_word_0, "\\-")
   names(processed_word) <- names(processed_word_0)
 
   # Fill in missing names for single words.
-  # Really need to refactor all the name handling here.
+  # Really need to refactor all the name handling here. (issue link above)
   if (length(processed_word) == 1) {
     names(processed_word) <- "base_word"
   }
@@ -80,6 +81,7 @@ process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
   if (!morpheme_changed & !inflection_changed) {
     # Nothing changed this round, so we're done. Add names back on IFF endings
     # were broken off (really need to clean up whole naming thing)
+    # https://github.com/jonthegeek/wikimorphemes/issues/7
     to_return <- c(current_word, ending)
     if (length(ending) > 0) {
       names(to_return) <- c("base_word", "inflection")
@@ -92,7 +94,8 @@ process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
                            current_depth = current_depth + 1,
                            max_depth = max_depth)
   })
-  names(ending) <- rep("inflection", length(ending)) # ugh, hacky
+  # ugh, hacky: https://github.com/jonthegeek/wikimorphemes/issues/7
+  names(ending) <- rep("inflection", length(ending))
   processed_word <- c(unlist(all_pieces), ending)
   # "fix" names by tossing everything before the last "."...and removing digits.
   names(processed_word) <- stringr::str_remove_all(names(processed_word),
@@ -242,7 +245,8 @@ split_morphemes <- function(word) {
     }
     # At this point in the process, apply standard that prefixes end in "-"
     breakdown[[1]] <- paste0(breakdown[[1]], "-")
-    names(breakdown) <- c("prefix", "base_word") # standardize and control..
+    names(breakdown) <- c("prefix", "base_word")
+    # standardize naming: https://github.com/jonthegeek/wikimorphemes/issues/7
   }
 
   return(breakdown)
@@ -275,7 +279,8 @@ split_morphemes <- function(word) {
     }
     # At this point in the process, apply standard that suffixes begin with "-"
     breakdown[[2]] <- paste0("-", breakdown[[2]])
-    names(breakdown) <- c("base_word", "suffix") # standardize and control...
+    names(breakdown) <- c("base_word", "suffix")
+    # standardize naming: https://github.com/jonthegeek/wikimorphemes/issues/7
   }
 
   return(breakdown)
@@ -350,7 +355,8 @@ split_morphemes <- function(word) {
       # "-", and prefixes end with "-"
       breakdown[[1]] <- paste0(breakdown[[1]], "-")
       breakdown[[2]] <- paste0("-", breakdown[[2]])
-      names(breakdown) <- c("prefix", "suffix") # standardize and control...
+      names(breakdown) <- c("prefix", "suffix")
+      # standardize names: https://github.com/jonthegeek/wikimorphemes/issues/7
 
     } else if (length(breakdown) == 3) { # nocov start
       # I can't find an example that tests this. "bedewed" uses this template,
