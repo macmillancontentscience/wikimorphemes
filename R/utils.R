@@ -118,20 +118,35 @@ magrittr::`%>%`
   }   # nocov end
   message("hitting wiktionary API!")
   all_content <- .fetch_word(word)
-  # Language sections are marked by "==<Language>==\n" headers.
   if (length(all_content) == 0) {
     # probably no page for this word
     return(character(0))
   }
+
+  return(.extract_english_wt(all_content))
+}
+
+#' Extract the English Section of a Wikitext Entry
+#'
+#' Pull just the English section out of a wikitext entry.
+#'
+#' @param wt The word's page, in wikitext format (returned by
+#'   \code{\link{.fetch_word}}).
+#'
+#' @return The English portion of the wikitext.
+#' @keywords internal
+.extract_english_wt <- function(wt) {
+  # Language sections are marked by "==<Language>==\n" headers.
   language_sections <- stringr::str_split(
-    string = all_content,
+    string = wt,
     pattern = "(^|\\n)==(?!=)"
   )[[1]]
-  english_section <- stringr::str_subset(
-    string = language_sections,
-    pattern = "^English==\\n"
+  return(
+    stringr::str_subset(
+      string = language_sections,
+      pattern = "^English==\\n"
+    )
   )
-  return(english_section)
 }
 
 # .detect_irregular_wt ---------------------------------------------------------
