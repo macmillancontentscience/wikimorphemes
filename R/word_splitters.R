@@ -9,7 +9,6 @@
 #'
 #' @return Character; the word split into pieces.
 #' @export
-#' @examples
 process_word <- function(word) {
   processed_word_0 <- process_word_recursive(word)
   # This is the place where we want to remove hyphens. But then we need to add
@@ -41,7 +40,6 @@ process_word <- function(word) {
 #'
 #' @return Character; the word split into pieces.
 #' @export
-#' @examples
 process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
   if (current_depth > max_depth) {
     message("maximum recursion depth of ", max_depth, " reached.")
@@ -85,7 +83,6 @@ process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
 #'
 #' @return Character; the word with standard endings split off.
 #' @export
-#' @examples
 split_inflections <- function(word) {
   english_content <- .fetch_english_word(word)
   if (length(english_content) == 0) {
@@ -151,7 +148,6 @@ split_inflections <- function(word) {
 #'
 #' @return Character; the word split into morphemes.
 #' @export
-#' @examples
 split_morphemes <- function(word) {
   # I might want to make these functions act on the wikitext, not the actual
   # word, so that we can limit calls to wiktionary API. Or maybe somehow cache
