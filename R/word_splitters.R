@@ -12,20 +12,17 @@
 #' @examples
 process_word <- function(word) {
   processed_word_0 <- process_word_recursive(word)
-  # I think this is the place where we'll want to remove hyphens? But then we
-  # need to add the names back on.
+  # This is the place where we want to remove hyphens. But then we need to add
+  # the names back on.
   processed_word <- stringr::str_remove_all(processed_word_0, "\\-")
   names(processed_word) <- names(processed_word_0)
 
-  # Fill in missing names for single words.
+  # Fill in missing name for single words.
   if (length(processed_word) == 1) {
     names(processed_word) <- .baseword_name
   }
   return(processed_word)
 }
-
-
-
 
 # process_word_recursive ------------------------------------------------------
 
@@ -63,7 +60,7 @@ process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
   # If we made it here, no inflections found. Check for morphemes...
   mor_break <- split_morphemes(word)
   if (length(mor_break) >= 2) {
-    # process all pieces
+    # process all pieces, including prefixes, etc.
     all_pieces <- purrr::map(
       mor_break,
       process_word_recursive,
@@ -71,7 +68,7 @@ process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
       max_depth = max_depth
     )
     processed_word <- unlist(all_pieces)
-    # Fix names by tossing everything before the last "." and removing digits.
+    # Fix names by dropping everything before the last "." and removing digits.
     names(processed_word) <- stringr::str_remove_all(names(processed_word),
                                                      "(.*\\.)|[0-9]*")
     return(processed_word)
@@ -79,8 +76,6 @@ process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
   # If we made it here, neither inflections nor morphemes found.
   return(word)
 }
-
-
 
 # split_inflections ------------------------------------------------------
 
