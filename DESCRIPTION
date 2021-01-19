@@ -1,6 +1,6 @@
 Package: wikimorphemes
 Title: Extracting Morphemes from Wiktionary Entries
-Version: 0.0.0.9003
+Version: 0.0.0.9004
 Authors@R: c(
     person("Jonathan", "Bratt", email = "jonathan.bratt@macmillan.com", 
            role = c("aut"),
@@ -26,6 +26,7 @@ Imports:
     dplyr (>= 1.0.2),
     magrittr (>= 1.5),
     purrr (>= 0.3.4),
+    rappdirs (>= 0.3.1),
     rlang (>= 0.4.8),
     stringdist (>= 0.9.6.3),
     stringr (>= 1.4.0),

@@ -9,6 +9,9 @@ rlang::.env
 #' @importFrom magrittr %>%
 magrittr::`%>%`
 
+#' @importFrom rlang %||%
+rlang::`%||%`
+
 # .list_pages_in_category -------------------------------------------------
 
 

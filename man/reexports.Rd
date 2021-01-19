@@ -6,6 +6,7 @@
 \alias{.data}
 \alias{.env}
 \alias{\%>\%}
+\alias{\%||\%}
 \title{Objects exported from other packages}
 \keyword{internal}
 \description{
@@ -15,6 +16,6 @@ below to see their documentation.
 \describe{
   \item{magrittr}{\code{\link[magrittr:pipe]{\%>\%}}}
 
-  \item{rlang}{\code{\link[rlang:tidyeval-data]{.data}}, \code{\link[rlang:tidyeval-data]{.env}}}
+  \item{rlang}{\code{\link[rlang:op-null-default]{\%||\%}}, \code{\link[rlang:tidyeval-data]{.data}}, \code{\link[rlang:tidyeval-data]{.env}}}
 }}
 
