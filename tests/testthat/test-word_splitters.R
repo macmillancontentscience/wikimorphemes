@@ -2,42 +2,42 @@ test_that("split_inflections works", {
 
   testthat::expect_identical(
     split_inflections("lighter"),
-    c(base_word = "light", ending = "er")
+    c(base_word = "light", inflection = "er")
   )
 
   testthat::expect_identical(
     split_inflections("lightest"),
-    c(base_word = "light", ending = "est")
+    c(base_word = "light", inflection = "est")
   )
 
   testthat::expect_identical(
     split_inflections("lighting"),
-    c(base_word = "light", ending = "ing")
+    c(base_word = "light", inflection = "ing")
   )
 
   testthat::expect_identical(
     split_inflections("lights"),
-    c(base_word = "light", ending = "s")
+    c(base_word = "light", inflection = "s")
   )
 
   testthat::expect_identical(
     split_inflections("running"),
-    c(base_word = "run", ending = "ing")
+    c(base_word = "run", inflection = "ing")
   )
 
   testthat::expect_identical(
     split_inflections("scrapped"),
-    c(base_word = "scrap", ending = "ed")
+    c(base_word = "scrap", inflection = "ed")
   )
 
   testthat::expect_identical(
     split_inflections("scraped"),
-    c(base_word = "scrape", ending = "ed")
+    c(base_word = "scrape", inflection = "ed")
   )
 
   testthat::expect_identical(
     split_inflections("escaping"),
-    c(base_word = "escape", ending = "ing")
+    c(base_word = "escape", inflection = "ing")
   )
 
   # non-splittable words come back unchanged

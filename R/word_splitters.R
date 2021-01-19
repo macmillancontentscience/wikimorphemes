@@ -1,6 +1,5 @@
 # process_word ------------------------------------------------------
 
-
 #' Split a Word into Pieces
 #'
 #' Splits a word into constituent pieces. Wrapper around
@@ -13,27 +12,19 @@
 #' @examples
 process_word <- function(word) {
   processed_word_0 <- process_word_recursive(word)
-  # I think this is the place where we'll want to remove hyphens? But then we
-  # need to add the names back on. Ugh, need to refactor all the name stuff.
-  # https://github.com/jonthegeek/wikimorphemes/issues/7
+  # This is the place where we want to remove hyphens. But then we need to add
+  # the names back on.
   processed_word <- stringr::str_remove_all(processed_word_0, "\\-")
   names(processed_word) <- names(processed_word_0)
 
-  # Fill in missing names for single words.
-  # Really need to refactor all the name handling here. (issue link above)
+  # Fill in missing name for single words.
   if (length(processed_word) == 1) {
-    names(processed_word) <- "base_word"
+    names(processed_word) <- .baseword_name
   }
-  # ...also fill in any other missing names (haven't caught all the edge cases)
-  names(processed_word)[names(processed_word) %in% c("", NA)] <- "base_word"
   return(processed_word)
 }
 
-
-
-
 # process_word_recursive ------------------------------------------------------
-
 
 #' Split a Word into Pieces
 #'
@@ -52,61 +43,41 @@ process_word <- function(word) {
 #' @export
 #' @examples
 process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
-  # https://github.com/jonthegeek/wikimorphemes/issues/9
   if (current_depth > max_depth) {
     message("maximum recursion depth of ", max_depth, " reached.")
     return(word)
   }
-  inflection_changed <- TRUE
-  morpheme_changed <- TRUE
-  ending <- character(0)
-  inf_break <- split_inflections(word)
-  if (identical(inf_break, word) |
-      length(inf_break) == 0) { # zero length if word (piece) not found
-    inflection_changed <- FALSE
-    current_word <- word
-  } else {
-    # names are "safe" to use as keys at this point.
-    current_word <- inf_break[["base_word"]]
-    ending <- inf_break[["ending"]]
-  }
 
-  # next, break current word into morphemes
-  mor_break <- split_morphemes(current_word)
-  if (identical(mor_break, current_word) |
-      length(mor_break) == 0) { # zero length if word (piece) not found...
-    morpheme_changed <- FALSE
+  # First check for inflections.
+  inf_break <- split_inflections(word)
+  if (length(inf_break) == 2) {
+    # keep processing base_word (inflection endings need no further processing)
+    return(c(process_word_recursive(inf_break[1],
+                                    current_depth = current_depth + 1,
+                                    max_depth = max_depth),
+             inf_break[2]))
   }
-  if (!morpheme_changed & !inflection_changed) {
-    # Nothing changed this round, so we're done. Add names back on IFF endings
-    # were broken off (really need to clean up whole naming thing)
-    # https://github.com/jonthegeek/wikimorphemes/issues/7
-    to_return <- c(current_word, ending)
-    if (length(ending) > 0) {
-      names(to_return) <- c("base_word", "inflection")
-    }
-    return(to_return)
+  # If we made it here, no inflections found. Check for morphemes...
+  mor_break <- split_morphemes(word)
+  if (length(mor_break) >= 2) {
+    # process all pieces, including prefixes, etc.
+    all_pieces <- purrr::map(
+      mor_break,
+      process_word_recursive,
+      current_depth = current_depth + 1,
+      max_depth = max_depth
+    )
+    processed_word <- unlist(all_pieces)
+    # Fix names by dropping everything before the last "." and removing digits.
+    names(processed_word) <- stringr::str_remove_all(names(processed_word),
+                                                     "(.*\\.)|[0-9]*")
+    return(processed_word)
   }
-  # otherwise, process all the word parts, starting from the beginning.
-  all_pieces <- purrr::map(
-    mor_break,
-    process_word_recursive,
-    current_depth = current_depth + 1,
-    max_depth = max_depth
-  )
-  # ugh, hacky: https://github.com/jonthegeek/wikimorphemes/issues/7
-  names(ending) <- rep("inflection", length(ending))
-  processed_word <- c(unlist(all_pieces), ending)
-  # "fix" names by tossing everything before the last "."...and removing digits.
-  names(processed_word) <- stringr::str_remove_all(names(processed_word),
-                                                   "(.*\\.)|[0-9]*")
-  return(processed_word)
+  # If we made it here, neither inflections nor morphemes found.
+  return(word)
 }
 
-
-
 # split_inflections ------------------------------------------------------
-
 
 #' Split Standard Verb, Noun, and Adjective Endings of a Word
 #'
@@ -154,7 +125,8 @@ split_inflections <- function(word) {
     if (!is.na(base_word)) {
       if (.check_reconstructed_word(word, base_word, ending) &
           .check_nonexplosive_word(word, base_word, ending)) {
-        breakdown <- c("base_word" = base_word, "ending" = ending)
+        breakdown <- c(base_word, ending)
+        names(breakdown) <- c(.baseword_name, .inflection_name)
         candidate_breakdowns[[length(candidate_breakdowns)+1]] <- breakdown
       }
     }
@@ -172,7 +144,6 @@ split_inflections <- function(word) {
 
 
 # split_morphemes ------------------------------------------------------
-
 
 #' Split Word into Morphemes
 #'
@@ -252,7 +223,7 @@ split_morphemes <- function(word) {
     }
     # At this point in the process, apply standard that prefixes end in "-"
     breakdown[[1]] <- paste0(breakdown[[1]], "-")
-    names(breakdown) <- c("prefix", "base_word")
+    names(breakdown) <- c(.prefix_name, .baseword_name)
     # standardize naming: https://github.com/jonthegeek/wikimorphemes/issues/7
   }
 
@@ -287,7 +258,7 @@ split_morphemes <- function(word) {
     }
     # At this point in the process, apply standard that suffixes begin with "-"
     breakdown[[2]] <- paste0("-", breakdown[[2]])
-    names(breakdown) <- c("base_word", "suffix")
+    names(breakdown) <- c(.baseword_name, .suffix_name)
     # standardize naming: https://github.com/jonthegeek/wikimorphemes/issues/7
   }
 
@@ -318,13 +289,12 @@ split_morphemes <- function(word) {
   if (!is.na(match)) { #  https://github.com/jonthegeek/wikimorphemes/issues/10
     # This one is tricky. If a piece ends with "-", assign name "prefix". If
     # starts with "-", assign name "suffix". If "-" on both sides, "interfix".
-    # If no "-", "base_word". (Standardize and control these somewhere.)
-    # https://github.com/jonthegeek/wikimorphemes/issues/7
-    name_list <- rep("base_word", length(breakdown))
-    name_list[stringr::str_starts(breakdown, "-")] <- "suffix"
-    name_list[stringr::str_ends(breakdown, "-")] <- "prefix"
+    # If no "-", it's a "base_word".
+    name_list <- rep(.baseword_name, length(breakdown))
+    name_list[stringr::str_starts(breakdown, "-")] <- .suffix_name
+    name_list[stringr::str_ends(breakdown, "-")] <- .prefix_name
     name_list[stringr::str_ends(breakdown, "-") &
-                stringr::str_starts(breakdown, "-")] <- "interfix"
+                stringr::str_starts(breakdown, "-")] <- .interfix_name
     # # now remove hyphens from breakdown. No, not now. We keep hyphens in
     # word pieces at this point so that in the recursive breakdown
     # prefixes, etc get processed appropriately (e.g. so "-mas" doesn't
@@ -367,7 +337,7 @@ split_morphemes <- function(word) {
       # "-", and prefixes end with "-"
       breakdown[[1]] <- paste0(breakdown[[1]], "-")
       breakdown[[2]] <- paste0("-", breakdown[[2]])
-      names(breakdown) <- c("prefix", "suffix")
+      names(breakdown) <- c(.prefix_name, .suffix_name)
       # standardize names: https://github.com/jonthegeek/wikimorphemes/issues/7
 
     } else if (length(breakdown) == 3) { # nocov start
@@ -375,7 +345,7 @@ split_morphemes <- function(word) {
       # but gets caught by inflection splitter first.
       breakdown[[1]] <- paste0(breakdown[[1]], "-")
       breakdown[[3]] <- paste0("-", breakdown[[3]])
-      names(breakdown) <- c("prefix", "base_word", "suffix")
+      names(breakdown) <- c(.prefix_name, .baseword_name, .suffix_name)
     } else {
       return(character(0))
       #https://github.com/jonthegeek/wikimorphemes/issues/10
@@ -410,7 +380,7 @@ split_morphemes <- function(word) {
   if (!is.na(match)) { #  https://github.com/jonthegeek/wikimorphemes/issues/10
     # all components should be tagged as base words
     # !!  Find a better way that doesn't involve repeated names?
-    names(breakdown) <- rep("base_word", length(breakdown))
+    names(breakdown) <- rep(.baseword_name, length(breakdown))
   }
 
   return(breakdown)
@@ -447,7 +417,7 @@ split_morphemes <- function(word) {
     breakdown <- stringr::str_split(string = breakdown,
                                     pattern = "\\s|\\-")[[1]]
     # all components should be tagged as base words
-    names(breakdown) <- rep("base_word", length(breakdown))
+    names(breakdown) <- rep(.baseword_name, length(breakdown))
     return(breakdown)
   }
   #  https://github.com/jonthegeek/wikimorphemes/issues/10
