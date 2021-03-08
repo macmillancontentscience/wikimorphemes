@@ -193,7 +193,7 @@ split_morphemes <- function(word) {
     # https://github.com/jonthegeek/wikimorphemes/issues/14
     warning("more than one unique breakdown found for: ", word) # nocov
   }
-  return(unique_breakdowns[[1]])
+  return(.clean_output(unique_breakdowns[[1]]))
 }
 
 
@@ -403,6 +403,7 @@ split_morphemes <- function(word) {
 .check_alt_spelling_wt <- function(wt) {
   # wt <- .fetch_english_word("passerby")
   # wt <- .fetch_english_word("clearinghouse")
+  # Maybe also catch "alternative form of" here?
   asp_patt <- .make_template_pattern("alternative spelling of")
   match <- stringr::str_match(wt, asp_patt)[[2]]
   # First split out the template parameters.
@@ -422,6 +423,37 @@ split_morphemes <- function(word) {
   }
   #  https://github.com/jonthegeek/wikimorphemes/issues/10
   return(character(0))
+}
+
+
+
+
+# .clean_output ------------------------------------------------------
+
+#' Clean word-splitter output
+#'
+#' Sometimes the output from the word-splitting routines has unexpected
+#' characters in it, such as spaces or apostrophes. To avoid downstream issues,
+#' we should do some clean-up on the output before continuing.
+#'
+#' @param split_word Character vector; the output from `split_morphemes` or
+#'   similar.
+#'
+#' @return Character vector; the output split on any unexpected characters.
+#' @keywords internal
+.clean_output <- function(split_word) {
+  # These are relatively rare cases. The `'` example has already been
+  # fixed in Wiktionary, but we should catch it just in case.
+
+  # we *don't* want to remove hyphens at this point, as they are used to
+  # indicate affixes.
+  split_more <- unlist(purrr::map(split_word, stringr::str_split,
+                                  pattern = "[^[:alpha:]\\-]"),
+                       use.names = TRUE)
+  split_more <- split_more[split_more != ""]
+  # we're a little naughty and use non-unique names.
+  names(split_more) <- stringr::str_remove_all(names(split_more), "[0-9]")
+  return(split_more)
 }
 
 
