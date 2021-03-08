@@ -444,6 +444,8 @@ split_morphemes <- function(word) {
 .clean_output <- function(split_word) {
   # These are relatively rare cases. The `'` example has already been
   # fixed in Wiktionary, but we should catch it just in case.
+  # This also takes care of the problem of infinitely recursing on, e.g.,
+  # "cyber-" due to empty string after the hyphen.
 
   # we *don't* want to remove hyphens at this point, as they are used to
   # indicate affixes.
