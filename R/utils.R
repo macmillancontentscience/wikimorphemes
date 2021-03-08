@@ -9,6 +9,9 @@ rlang::.env
 #' @importFrom magrittr %>%
 magrittr::`%>%`
 
+#' @importFrom memoise memoise
+memoise::memoise
+
 # .list_pages_in_category -------------------------------------------------
 
 
