@@ -1,0 +1,212 @@
+---
+title: "Finding Candidates for Edits"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Finding Candidates for Edits}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+# can run manually on datascience by removing the `eval = FALSE` flag.
+wiktionary_dump <- "/shared/wiktionary/all_wiktionary_en.rds"
+eval_flag <- file.exists(wiktionary_dump)
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  warning = FALSE,
+  eval = eval_flag,
+  comment = "#>"
+)
+```
+
+Something we may want to be doing is systematically identifying words that are
+missing a breakdown (an etymology or a surface analysis) in Wiktionary. This
+vignette is an example of how wikimorphemes can be used to assist this process.
+
+The basic approach we'll follow is...
+
+1. Find a list of words that don't get broken down by `process_word`.
+2. Target one or more particular families of breakdowns, e.g. words with the 
+"-ation" suffix.
+3. Write a simple helper function to find candidates for the target breakdown.
+4. **Important:** manually validate candidates (say, in a Google sheet).
+5. For manually confirmed candidates, submit edits to Wiktionary (perhaps using
+the wikimorphemesedit package).
+
+## Find unbroken target words
+
+```{r, message = FALSE}
+library(dplyr)
+library(wikimorphemes)
+# load wiktionary cache to be faster and avoid hitting the API too much.
+# Make sure this is up-to-date to avoid repeating edits.
+# Set in setup:
+# wiktionary_dump <- "/shared/wiktionary/all_wiktionary_en.rds"
+all_wiktionary_en <- readRDS(wiktionary_dump)
+```
+
+Processing a long list of words can take a while, so we may want to focus the 
+list before processing.
+
+```{r}
+# start with a collection of words from some corpus
+
+# generate clean words with something like this...
+
+# big_text <- readLines("~/testing_corpus/big_corpus.txt")
+# words <- unique(
+#   tolower(
+#     unlist(stringr::str_split(stringr::str_squish(big_text), " "))
+#     )
+#   )
+# # make sure we have a clean set of words
+# clean_words <- words[!stringr::str_detect(words, "[^a-z]")]
+
+# just load saved list of clean words
+clean_words <- readRDS("clean_sample_words.rds")
+head(clean_words)
+
+# we can save time here by keeping only words in the family we're targeting
+target_suffix <- "ation"
+target_words <- clean_words[stringr::str_ends(clean_words,
+                                              pattern = target_suffix)]
+
+# now process all the words to find the ones without a breakdown in wiktionary
+unbroken <- purrr::map_lgl(target_words, function(w) {
+  pw <- wikimorphemes::process_word(w)
+  return(length(pw) == 1)
+})
+
+unbroken_words <- target_words[unbroken]
+head(unbroken_words)
+```
+
+## Helper function
+
+The helper function may need to be modified depending on the target family. The
+purpose of this function is to generate plausible breakdowns involving the
+target suffix. A plausible breakdown may be a simple word + suffix, such as:
+"formation" -> "form" + "ation". But often, a word will have dropped a final
+letter (usually "e"): "conservation" -> "conserve" + "ation". This function
+checks for these simple cases.
+
+More complex helper functions would need to be written to generate breakdowns
+like "explanation" -> "explain" + "ation".
+
+```{r}
+generate_plausible_breakdowns <- function(word, 
+                                   suffix_to_use, 
+                                   extra_letters = c("e")) {
+  if (stringr::str_ends(word, suffix_to_use)) {
+    # break off the suffix to get the "base" possible base word
+    possible_base <- stringr::str_sub(word, end = -(nchar(suffix_to_use) + 1))
+    # ... but other possible words come from adding extra letters
+    possible_bases <- paste0(possible_base, c("", extra_letters)) 
+    # use wiktionary dump (must be in environment!) to ID actual words
+    found <- possible_bases %in% all_wiktionary_en$title 
+    if (!any(found)) {
+      return(NA_character_)
+    }
+    # if we find multiple candidates, we want to evaluate them all
+    candidate_list <- purrr::map_chr(possible_bases[found], function(bw) {
+          paste(bw, "##", suffix_to_use)
+    })
+    return(candidate_list)
+  }
+  return(NA_character_)
+}
+```
+
+### Run helper function
+
+```{r}
+unbroken_words_df <- dplyr::tibble(word = unbroken_words)
+
+candidate_breakdowns <- unbroken_words_df %>% 
+  dplyr::mutate(possible_ation = purrr::map(word,
+                                     generate_plausible_breakdowns,
+                                     suffix_to_use = target_suffix)) %>% 
+  # first remove empty cases, which mess up the unnest. This is messy
+  # because it's a list column.
+  dplyr::mutate(remove = purrr::map_lgl(possible_ation, 
+         function(pa) {return(all(is.na(pa)))})) %>% 
+  dplyr::filter(!remove) %>% 
+  tidyr::unnest_longer(col = possible_ation) %>% 
+  select(-remove) 
+
+candidate_breakdowns %>% 
+  head(10) 
+```
+
+
+Examining the resulting candidates, we notice that many of these words are not
+actually "-ation" words. For example, "rotation" -> "rotate" + "ion". 
+Fortunately, our helper function can also be used to find "-ion" breakdowns:
+
+```{r}
+# this is starting to take a while--might be worth making
+# helper function more efficient
+candidate_breakdowns2 <- unbroken_words_df %>% 
+  dplyr::mutate(possible_ation = purrr::map(word,
+                                     generate_plausible_breakdowns,
+                                     suffix_to_use = target_suffix)) %>% 
+    dplyr::mutate(possible_ion = purrr::map(word,
+                                     generate_plausible_breakdowns,
+                                     suffix_to_use = "ion")) %>% 
+  # gather all the candidates into a single column...
+  tidyr::pivot_longer(cols = all_of(c("possible_ation", "possible_ion")), 
+                      values_to = "possible_breakdown") %>% 
+  #  remove empty cases, which mess up the unnest
+  dplyr::mutate(remove = purrr::map_lgl(possible_breakdown, 
+         function(pa) {return(all(is.na(pa)))})) %>% 
+  dplyr::filter(!remove) %>% 
+  tidyr::unnest_longer(col = possible_breakdown) %>% 
+  dplyr::select(-remove, -name) 
+
+candidate_breakdowns2 %>% 
+  head(10) 
+```
+
+This list looks promising. But clearly it needs to be checked by a human
+before submitting edits to Wiktionary. 
+
+## Human validation
+
+A good way to do the validation is by sending the candidates to a Google sheet.
+
+```{r, eval = FALSE}
+# not run; just for illustration
+
+MMRcredcrypt::authorize_gs4(email = "jonathan.bratt@macmillan.com")
+gs_url <- "https://docs.google.com/spreadsheets/d/11feSn_TzkfSHE2rG1VaBut8UG-yzezXqAgTcCQtAI0g/"
+
+googlesheets4::write_sheet(candidate_breakdowns2 %>% 
+                             # add column for human check
+                             dplyr::mutate("correct?" = ""), 
+                           ss = gs_url, 
+                           sheet = "candidates")
+```
+
+A human would then need to evaluate each candidate breakdown. This is often
+straightforward, but not always! For example, should "activation" be "active" +
+"ation" or "activate" + "ion"? The second option is probably preferable in this
+case (note that Wiktionary already has the breakdown "activate" -> "active" +
+"-ate"), but each case needs careful consideration. The human validator should
+be prepared to defend all decisions in front of a grumpy group of Wiktionary
+admins, so it's ok (and recommended) to leave any unclear cases **unconfirmed**.
+
+The next step would be to do something like this:
+
+```{r, eval = FALSE}
+MMRcredcrypt::authorize_gs4(email = "jonathan.bratt@macmillan.com")
+gs_url <- "https://docs.google.com/spreadsheets/d/11feSn_TzkfSHE2rG1VaBut8UG-yzezXqAgTcCQtAI0g/"
+
+checked_candidates <- googlesheets4::read_sheet(ss = gs_url,
+                          sheet = "candidates") %>% 
+  dplyr::filter(`correct?` == "y") %>% 
+  dplyr::select(word, possible_breakdown)
+
+# ...and make the appropriate edits in wiktionary, possibly using
+# routines from wikimorphemesedit
+```
+

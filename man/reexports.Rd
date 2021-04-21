@@ -6,6 +6,7 @@
 \alias{.data}
 \alias{.env}
 \alias{\%>\%}
+\alias{memoise}
 \title{Objects exported from other packages}
 \keyword{internal}
 \description{
@@ -14,6 +15,8 @@ below to see their documentation.
 
 \describe{
   \item{magrittr}{\code{\link[magrittr:pipe]{\%>\%}}}
+
+  \item{memoise}{\code{\link[memoise]{memoise}}}
 
   \item{rlang}{\code{\link[rlang:tidyeval-data]{.data}}, \code{\link[rlang:tidyeval-data]{.env}}}
 }}
