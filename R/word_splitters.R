@@ -47,6 +47,10 @@ process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
     message("maximum recursion depth of ", max_depth, " reached.")
     return(word)
   }
+  # we never want to split short words (say, three chars or less)
+  if (nchar(word) <= 3) {
+    return(word)
+  }
 
   # First check for inflections.
   inf_break <- split_inflections(word)
