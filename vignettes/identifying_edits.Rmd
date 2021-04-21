@@ -73,7 +73,7 @@ target_words <- clean_words[stringr::str_ends(clean_words,
 
 # now process all the words to find the ones without a breakdown in wiktionary
 unbroken <- purrr::map_lgl(target_words, function(w) {
-  pw <- wikimorphemes::process_word(w)
+  pw <- process_word(w)
   return(length(pw) == 1)
 })
 
@@ -124,15 +124,15 @@ unbroken_words_df <- dplyr::tibble(word = unbroken_words)
 
 candidate_breakdowns <- unbroken_words_df %>% 
   dplyr::mutate(possible_ation = purrr::map(word,
-                                     generate_plausible_breakdowns,
-                                     suffix_to_use = target_suffix)) %>% 
+                                            generate_plausible_breakdowns,
+                                            suffix_to_use = target_suffix)) %>% 
   # first remove empty cases, which mess up the unnest. This is messy
   # because it's a list column.
   dplyr::mutate(remove = purrr::map_lgl(possible_ation, 
          function(pa) {return(all(is.na(pa)))})) %>% 
   dplyr::filter(!remove) %>% 
   tidyr::unnest_longer(col = possible_ation) %>% 
-  select(-remove) 
+  dplyr::select(-remove) 
 
 candidate_breakdowns %>% 
   head(10) 
@@ -148,11 +148,11 @@ Fortunately, our helper function can also be used to find "-ion" breakdowns:
 # helper function more efficient
 candidate_breakdowns2 <- unbroken_words_df %>% 
   dplyr::mutate(possible_ation = purrr::map(word,
-                                     generate_plausible_breakdowns,
-                                     suffix_to_use = target_suffix)) %>% 
-    dplyr::mutate(possible_ion = purrr::map(word,
-                                     generate_plausible_breakdowns,
-                                     suffix_to_use = "ion")) %>% 
+                                            generate_plausible_breakdowns,
+                                            suffix_to_use = target_suffix)) %>% 
+  dplyr::mutate(possible_ion = purrr::map(word,
+                                          generate_plausible_breakdowns,
+                                          suffix_to_use = "ion")) %>% 
   # gather all the candidates into a single column...
   tidyr::pivot_longer(cols = all_of(c("possible_ation", "possible_ion")), 
                       values_to = "possible_breakdown") %>% 
