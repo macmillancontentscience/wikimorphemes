@@ -3,8 +3,12 @@
 
 #' @importFrom rlang .data
 rlang::.data
+
 #' @importFrom rlang .env
 rlang::.env
+
+#' @importFrom rlang %||%
+rlang::`%||%`
 
 #' @importFrom magrittr %>%
 magrittr::`%>%`
@@ -115,8 +119,8 @@ memoise::memoise
     # message("using wiktionary dump from global environment.")
     all_wiktionary_en <- get("all_wiktionary_en", envir = .GlobalEnv)
     content <- all_wiktionary_en %>%
-      dplyr::filter(.data$title == .env$word) %>%
-      dplyr::pull(.data$text)
+      dplyr::filter(.data$word == .env$word) %>%
+      dplyr::pull(.data$wikitext)
     return(content)
   }   # nocov end
   message("hitting wiktionary API!")
@@ -126,16 +130,238 @@ memoise::memoise
     # probably no page for this word
     return(character(0))
   }
-  language_sections <- stringr::str_split(
-    string = all_content,
-    pattern = "(^|\\n)==(?!=)"
+
+  return(.extract_relevant_english_wt(all_content))
+}
+
+#' Extract the Relevant English Sections of a Wikitext Entry
+#'
+#' Pull just the English section out of a wikitext entry and drop things like
+#' extra etymologies or anagrams.
+#'
+#' @inheritParams .extract_english_wt
+#'
+#' @return The relevant sections from the English portion of the wikitext.
+#' @keywords internal
+.extract_relevant_english_wt <- function(wt) {
+  english_section <- .extract_english_wt(wt)
+  if (length(english_section)) {
+    return(.drop_irrelevant_sections(english_section))
+  } else {
+    return(character(0))
+  }
+}
+
+#' Split Wikitext into Sections
+#'
+#' @param wt The word's page, in wikitext format (returned by
+#'   \code{\link{.fetch_word}}), or a subsection thereof.
+#' @param depth Integer; the heading depth (the number of ='s before the
+#'   heading).
+#' @param keep_first Whether to keep front matter before the first section.
+#'
+#' @return A named character vector of the sections.
+#' @keywords internal
+.split_sections <- function(wt, depth, keep_first = TRUE) {
+  heading_indicator_piece <- "="
+  heading_indicator <- paste(
+    rep(heading_indicator_piece, times = depth),
+    collapse = ""
+  )
+  maybe_extra_heading_indicators <- .regex_zero_or_more(heading_indicator_piece)
+  normal_text <- .regex_any_character_except(heading_indicator_piece)
+  maybe_normal_text <- .regex_zero_or_more(normal_text)
+  heading_text <- .regex_one_or_more(normal_text)
+  beginning <- .regex_or(c("^", "\n", ">"))
+
+  heading_names <- stringr::str_extract_all(
+    string = wt,
+    pattern = paste0(
+      .regex_positive_lookbehind(
+        paste0(beginning, heading_indicator)
+      ),
+      heading_text,
+      .regex_positive_lookahead(
+        paste0(
+          heading_indicator,
+          maybe_extra_heading_indicators,
+          maybe_normal_text
+        )
+      )
+    )
   )[[1]]
-  english_section <- stringr::str_subset(
-    string = language_sections,
-    pattern = "^English==\\n"
+  if (length(heading_names)) {
+    sections <- stringr::str_split(
+      string = wt,
+      pattern = paste0(
+        beginning,
+        heading_indicator,
+        heading_text,
+        heading_indicator,
+        maybe_extra_heading_indicators,
+        .regex_negative_lookahead(heading_indicator_piece)
+      )
+    )[[1]]
+
+    # stop(
+    #   "Check that the length of heading_names and the length of sections match following whichever rule we're following."
+    # )
+
+    # If we're keeping the first section, we need to create a heading for it.
+    # Otherwise drop it and use the existing names.
+    if (keep_first & nchar(sections[[1]])) {
+      heading_names <- c(
+        "Front matter",
+        heading_names
+      )
+    } else {
+      sections <- sections[-1]
+    }
+
+    # Get rid of extra \n's.
+    sections <- stringr::str_trim(sections)
+    sections <- stringr::str_replace_all(
+      sections,
+      .regex_one_or_more("\n"),
+      "\n"
+    )
+
+    if (length(heading_names) != length(sections)) {
+      rlang::abort(
+        message = paste(
+          "Section length mismatch. These are the section names:",
+          paste(heading_names, collapse = ", "),
+          "And this is the text minus those section breaks:",
+          paste(sections, collapses = "\n"),
+          sep = "\n"
+        )
+      )
+    }
+
+    names(sections) <- heading_names
+
+    return(sections)
+  } else {
+    return(character(0))
+  }
+}
+
+#' Recombine Sections into Wikitext
+#'
+#' @param sections A named character vector of sections returned by
+#'   \code{\link{.split_sections}}.
+#' @param depth The depth at which these sections were extracted.
+#'
+#' @return A character scalar of the recombined sections.
+#' @keywords internal
+.recombine_sections <- function(sections, depth) {
+  heading_indicator_piece <- "="
+  heading_indicator <- paste(
+    rep(heading_indicator_piece, times = depth),
+    collapse = ""
+  )
+  section_names <- paste0(
+    heading_indicator,
+    names(sections),
+    heading_indicator
+  )
+  section_names <- ifelse(
+    names(sections) == "Front matter",
+    "",
+    section_names
+  )
+  collapsed_text <- stringr::str_trim(
+    paste(
+      section_names,
+      sections,
+      sep = "\n",
+      collapse = "\n"
+    )
+  )
+
+  return(collapsed_text)
+}
+
+#' Get Rid of Chaff in Wikitext
+#'
+#' @inheritParams .split_sections
+#'
+#' @return A character scalar of the cleaned wikitext.
+#' @keywords internal
+.drop_irrelevant_sections <- function(wt, depth = 3L) {
+  # General strategy: divide it up at depth, then call this for all of those
+  # with depth + 1. If there aren't any headings at this level, we're done.
+  sections <- .split_sections(wt, depth)
+  if (length(sections)) {
+    # For each element of sections, call this with depth + 1.
+    sections <- purrr::map_chr(
+      sections,
+      .drop_irrelevant_sections,
+      depth = depth + 1L
+    )
+
+    # Remove bad etymologies and irrelevant sections at this level.
+    extra_etymologies <- stringr::str_subset(
+      unique(names(sections)),
+      "Etymology (\\d{2,})|[02-9]"
+    )
+    irrelevant_headings <- c(
+      "Anagrams",
+      "Antonyms",
+      "Derived terms",
+      "Descendants",
+      "Hyponyms",
+      "Pronunciation",
+      "References",
+      "Related terms",
+      "See also",
+      "Synonyms",
+      "Translations",
+      extra_etymologies
+    )
+    sections <- sections[!(names(sections) %in% irrelevant_headings)]
+
+    # Recombine and return.
+    sections <- .recombine_sections(sections, depth)
+
+    return(sections)
+  } else {
+    return(wt)
+  }
+}
+
+#' Extract the English Section of a Wikitext Entry
+#'
+#' Pull just the English section out of a wikitext entry.
+#'
+#' @param wt The word's page, in wikitext format (returned by
+#'   \code{\link{.fetch_word}}).
+#'
+#' @return The English portion of the wikitext, minus irrelevant sections.
+#' @keywords internal
+.extract_english_wt <- function(wt) {
+  # Language sections are always depth = 2 ("==Language==")
+  language_sections <- .split_sections(wt = wt, depth = 2, keep_first = FALSE)
+  english_section <- unname(
+    language_sections[names(language_sections) == "English"]
   )
   return(english_section)
 }
+
+#' Extract Etymology from an English Wikitext Entry
+#'
+#' Pull just the first etymology section out of the English section of a
+#' wikitext entry.
+#'
+#' @param english_section The word's English section, in wikitext format
+#'   (returned by \code{\link{.fetch_english_word}}).
+#'
+#' @return Etymology 1 from the English portion of the wikitext.
+#' @keywords internal
+.extract_etymology <- function(english_section) {
+
+}
+
 
 # .detect_irregular_wt ---------------------------------------------------------
 

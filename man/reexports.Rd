@@ -5,6 +5,7 @@
 \alias{reexports}
 \alias{.data}
 \alias{.env}
+\alias{\%||\%}
 \alias{\%>\%}
 \alias{memoise}
 \title{Objects exported from other packages}
@@ -18,6 +19,6 @@ below to see their documentation.
 
   \item{memoise}{\code{\link[memoise]{memoise}}}
 
-  \item{rlang}{\code{\link[rlang:tidyeval-data]{.data}}, \code{\link[rlang:tidyeval-data]{.env}}}
+  \item{rlang}{\code{\link[rlang:op-null-default]{\%||\%}}, \code{\link[rlang:tidyeval-data]{.data}}, \code{\link[rlang:tidyeval-data]{.env}}}
 }}
 
