@@ -1,84 +1,3 @@
-
-# misc imports ------------------------------------------------------------
-
-#' @importFrom rlang .data
-rlang::.data
-
-#' @importFrom rlang .env
-rlang::.env
-
-#' @importFrom rlang %||%
-rlang::`%||%`
-
-#' @importFrom magrittr %>%
-magrittr::`%>%`
-
-#' @importFrom memoise memoise
-memoise::memoise
-
-# .list_pages_in_category -------------------------------------------------
-
-
-#' List All Pages in a Category
-#'
-#' Wiktionary only returns 500 results at a time. Many categories have far more
-#' than 500 results. Use this function to get them all.
-#'
-#' @inheritParams WikipediR::pages_in_category
-#'
-#' @return A tibble of results.
-#' @keywords internal
-.list_pages_in_category <- function(categories,
-                                   type = c("page", "subcat", "file")) {
-  initial <- WikipediR::pages_in_category(
-    language = "en",
-    project = "wiktionary",
-    categories = categories,
-    properties = c("id", "title"),
-    type = type,
-    limit = 500
-  )
-  this_df <- .clean_wiktionary_category_list(initial)
-  continue <- initial$continue
-  while(!is.null(continue)) {
-    new_result <- WikipediR::pages_in_category(
-      language = "en",
-      project = "wiktionary",
-      categories = categories,
-      properties = c("id", "title"),
-      type = type,
-      limit = 500,
-      extra_query = list(cmcontinue = continue$cmcontinue)
-    )
-    this_df <- dplyr::bind_rows(
-      this_df,
-      .clean_wiktionary_category_list(new_result)
-    )
-    continue <- new_result$continue
-  }
-  return(this_df)
-}
-
-
-# .clean_wiktionary_category_list -----------------------------------------
-
-
-#' Get the Members of a Category Return
-#'
-#' @param query_return List; the return from
-#'   \code{\link[WikipediR]{pages_in_category}}.
-#'
-#' @return A tibble of results.
-#' @keywords internal
-.clean_wiktionary_category_list <- function(query_return) {
-  return(
-    tibble::enframe(query_return$query$categorymembers) %>%
-      tidyr::unnest_wider(.data$value) %>%
-      dplyr::select(-.data$name)
-  )
-}
-
-
 # .fetch_word -------------------------------------------------------------
 
 
@@ -114,11 +33,9 @@ memoise::memoise
 #'   format.
 #' @keywords internal
 .fetch_english_word <- function(word) {
-  # Temporary hack to use wk download...
-  if ("all_wiktionary_en" %in% ls(envir = .GlobalEnv)) { # nocov start
-    # message("using wiktionary dump from global environment.")
-    all_wiktionary_en <- get("all_wiktionary_en", envir = .GlobalEnv)
-    content <- all_wiktionary_en %>%
+  # Use the cache if they have it.
+  if (!is.null(.cache_wikitext())) { # nocov start
+    content <- .cache_wikitext() %>%
       dplyr::filter(.data$word == .env$word) %>%
       dplyr::pull(.data$wikitext)
     return(content)
@@ -346,20 +263,6 @@ memoise::memoise
     language_sections[names(language_sections) == "English"]
   )
   return(english_section)
-}
-
-#' Extract Etymology from an English Wikitext Entry
-#'
-#' Pull just the first etymology section out of the English section of a
-#' wikitext entry.
-#'
-#' @param english_section The word's English section, in wikitext format
-#'   (returned by \code{\link{.fetch_english_word}}).
-#'
-#' @return Etymology 1 from the English portion of the wikitext.
-#' @keywords internal
-.extract_etymology <- function(english_section) {
-
 }
 
 

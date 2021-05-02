@@ -153,10 +153,6 @@ split_inflections <- function(word) {
 #' @return Character; the word split into morphemes.
 #' @export
 split_morphemes <- function(word) {
-  # I might want to make these functions act on the wikitext, not the actual
-  # word, so that we can limit calls to wiktionary API. Or maybe somehow cache
-  # results in session?
-  # https://github.com/jonthegeek/wikimorphemes/issues/13
   english_content <- .fetch_english_word(word)
   if (length(english_content) == 0) {
     # not an english word
