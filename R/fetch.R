@@ -120,10 +120,6 @@
       )
     )[[1]]
 
-    # stop(
-    #   "Check that the length of heading_names and the length of sections match following whichever rule we're following."
-    # )
-
     # If we're keeping the first section, we need to create a heading for it.
     # Otherwise drop it and use the existing names.
     if (keep_first & nchar(sections[[1]])) {
