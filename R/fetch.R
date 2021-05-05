@@ -8,7 +8,7 @@
 #' @return Character; the word's page, in wikitext format.
 #' @keywords internal
 .fetch_word <- function(word) {
-  content <- tryCatch({
+  content <- tryCatch({ # nocov start
     WikipediR::page_content(
       "en",
       "wiktionary",
@@ -20,7 +20,7 @@
     return(character(0)) # decide on this
   })
 
-  return(content)
+  return(content) # nocov end
 }
 
 # .fetch_english_word ---------------------------------------------------------
@@ -34,13 +34,13 @@
 #' @keywords internal
 .fetch_english_word <- function(word) {
   # Use the cache if they have it.
-  if (!is.null(.cache_wikitext())) { # nocov start
+  if (!is.null(.cache_wikitext())) {
     content <- .cache_wikitext() %>%
       dplyr::filter(.data$word == .env$word) %>%
       dplyr::pull(.data$wikitext)
     return(content)
-  }   # nocov end
-  message("hitting wiktionary API!")
+  }
+  message("hitting wiktionary API!") # nocov start
   all_content <- .fetch_word(word)
   # Language sections are marked by "==<Language>==\n" headers.
   if (length(all_content) == 0) {
@@ -48,7 +48,7 @@
     return(character(0))
   }
 
-  return(.extract_relevant_english_wt(all_content))
+  return(.extract_relevant_english_wt(all_content)) # nocov end
 }
 
 #' Extract the Relevant English Sections of a Wikitext Entry
@@ -61,12 +61,12 @@
 #' @return The relevant sections from the English portion of the wikitext.
 #' @keywords internal
 .extract_relevant_english_wt <- function(wt) {
-  english_section <- .extract_english_wt(wt)
+  english_section <- .extract_english_wt(wt) # nocov start
   if (length(english_section)) {
     return(.drop_irrelevant_sections(english_section))
   } else {
     return(character(0))
-  }
+  } # nocov end
 }
 
 #' Split Wikitext into Sections
@@ -80,7 +80,7 @@
 #' @return A named character vector of the sections.
 #' @keywords internal
 .split_sections <- function(wt, depth, keep_first = TRUE) {
-  heading_indicator_piece <- "="
+  heading_indicator_piece <- "=" # nocov start
   heading_indicator <- paste(
     rep(heading_indicator_piece, times = depth),
     collapse = ""
@@ -156,7 +156,7 @@
     return(sections)
   } else {
     return(character(0))
-  }
+  } # nocov end
 }
 
 #' Recombine Sections into Wikitext
@@ -168,7 +168,7 @@
 #' @return A character scalar of the recombined sections.
 #' @keywords internal
 .recombine_sections <- function(sections, depth) {
-  heading_indicator_piece <- "="
+  heading_indicator_piece <- "=" # nocov start
   heading_indicator <- paste(
     rep(heading_indicator_piece, times = depth),
     collapse = ""
@@ -192,7 +192,7 @@
     )
   )
 
-  return(collapsed_text)
+  return(collapsed_text) # nocov end
 }
 
 #' Get Rid of Chaff in Wikitext
@@ -204,7 +204,7 @@
 .drop_irrelevant_sections <- function(wt, depth = 3L) {
   # General strategy: divide it up at depth, then call this for all of those
   # with depth + 1. If there aren't any headings at this level, we're done.
-  sections <- .split_sections(wt, depth)
+  sections <- .split_sections(wt, depth) # nocov start
   if (length(sections)) {
     # For each element of sections, call this with depth + 1.
     sections <- purrr::map_chr(
@@ -240,7 +240,7 @@
     return(sections)
   } else {
     return(wt)
-  }
+  } # nocov end
 }
 
 #' Extract the English Section of a Wikitext Entry
@@ -254,11 +254,12 @@
 #' @keywords internal
 .extract_english_wt <- function(wt) {
   # Language sections are always depth = 2 ("==Language==")
+  # nocov start
   language_sections <- .split_sections(wt = wt, depth = 2, keep_first = FALSE)
   english_section <- unname(
     language_sections[names(language_sections) == "English"]
   )
-  return(english_section)
+  return(english_section) # nocov end
 }
 
 

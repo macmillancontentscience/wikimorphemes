@@ -4,7 +4,6 @@
 # wikimorphemes
 
 <!-- badges: start -->
-
 <!-- badges: end -->
 
 The goal of wikimorphemes is to provide tools for extracting morphemes
@@ -26,6 +25,14 @@ And the development version from [GitHub](https://github.com/) with:
 # install.packages("devtools")
 devtools::install_github("jonthegeek/wikimorphemes")
 ```
+
+## Working on wikimorphemes
+
+If you are going to work on this package, please let us know, and we’ll
+get you a copy of the cache currently used by the package. We are
+working on making it easier to share that cache, and to make the tests
+work both with and without the cache, but for now the package expects
+you to have a cache available.
 
 ## Code of Conduct
 

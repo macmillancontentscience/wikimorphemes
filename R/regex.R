@@ -1,3 +1,5 @@
+# nocov start
+
 #' Helper to Generate Regex Positive Look Behind
 #'
 #' @param string Character; a string or strings to modify with regex. The thing
@@ -93,3 +95,5 @@
 .regex_zero_or_more <- function(string) {
   paste0(string, "*")
 }
+
+# nocov end

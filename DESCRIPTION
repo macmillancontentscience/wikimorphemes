@@ -25,6 +25,7 @@ BugReports: https://github.com/jonthegeek/wikimorphemes/issues
 Imports: 
     dplyr (>= 1.0.4),
     fs (>= 1.5.0),
+    lubridate,
     magrittr (>= 1.5),
     memoise (>= 1.1.0),
     purrr (>= 0.3.4),
@@ -33,8 +34,9 @@ Imports:
     stringdist (>= 0.9.6.3),
     stringr (>= 1.4.0),
     tibble (>= 3.0.4),
-    tidyr (>= 1.1.2),
-    WikipediR (>= 1.6.0)
+    utils,
+    WikipediR (>= 1.6.0),
+    xml2
 Remotes:
     Ironholds/WikipediR#31
 Suggests: 

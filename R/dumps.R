@@ -1,3 +1,7 @@
+# For now, we aren't going to test *any* of this. I test it manually.
+
+# nocov start
+
 #' Process the Latest Wiktionary Dump File
 #'
 #' Using this package can result in a lot of hits to the wiktionary API. To
@@ -123,7 +127,7 @@ process_wiktionary_dump <- function(cache_dir = wikimorphemes_cache_dir()) {
 #' @keywords internal
 .download_latest_dump <- function() {
   dump_filename <- tempfile("wiktionary_dump", fileext = ".xml.bz2")
-  download_check <- download.file(
+  download_check <- utils::download.file(
     url = paste0(
       "https://dumps.wikimedia.org/enwiktionary/latest/",
       "enwiktionary-latest-pages-articles.xml.bz2"
@@ -158,8 +162,8 @@ process_wiktionary_dump <- function(cache_dir = wikimorphemes_cache_dir()) {
       tibble::tibble(
         start_line = grep("<page>", readLines(dump_filename))
       ),
-      end_line = dplyr::lead(start_line - 1L),
-      total_lines = end_line - start_line + 1L
+      end_line = dplyr::lead(.data$start_line - 1L),
+      total_lines = .data$end_line - .data$start_line + 1L
     )
   )
 }
@@ -268,3 +272,5 @@ process_wiktionary_dump <- function(cache_dir = wikimorphemes_cache_dir()) {
     )
   )
 }
+
+# nocov end

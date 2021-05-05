@@ -15,8 +15,7 @@
     return(
       readRDS(cache_file)
     )
-  }
-  else {
+  } else {
     return(NULL)
   }
 }
@@ -44,12 +43,12 @@ wikimorphemes_cache_dir <- function(cache_dir = NULL) {
   } else {
     # file.access returns 0 for success because it hates clean code. The user
     # has to have read permissions for this function.
-    if (file.access(cache_dir, 4) != 0) {
+    if (file.access(cache_dir, 4) != 0) { # nocov start
       rlang::abort(
         message = paste("You do not have read access to", cache_dir),
         class = "dir_read_error"
       )
-    }
+    } # nocov end
   }
   options(wikimorphemes.dir = cache_dir)
 

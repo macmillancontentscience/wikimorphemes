@@ -97,7 +97,7 @@ split_inflections <- function(word) {
 
   if (.detect_irregular_wt(english_content)) {
     # for now, return irregular words without attempting to split inflections.
-    return(word)
+    return(word) # nocov
   }
 
   # Wiktionary has a variety of templates for various standard endings. In some
@@ -157,7 +157,7 @@ split_morphemes <- function(word) {
   if (length(english_content) == 0) {
     # not an english word
     #  https://github.com/jonthegeek/wikimorphemes/issues/10
-    return(character(0))
+    return(character(0)) # nocov
   }
 
   candidate_breakdowns <- list(
@@ -215,7 +215,7 @@ split_morphemes <- function(word) {
     # `breakdown` should be length-2, but template might be badly formatted.
     if (length(breakdown) != 2) {
       #  https://github.com/jonthegeek/wikimorphemes/issues/10
-      return(character(0))
+      return(character(0)) # nocov
     }
     # At this point in the process, apply standard that prefixes end in "-"
     breakdown[[1]] <- paste0(breakdown[[1]], "-")
@@ -250,7 +250,7 @@ split_morphemes <- function(word) {
     # `breakdown` should be length-2, but template might be badly formatted.
     if (length(breakdown) != 2) {
       #  https://github.com/jonthegeek/wikimorphemes/issues/10
-      return(character(0))
+      return(character(0)) # nocov
     }
     # At this point in the process, apply standard that suffixes begin with "-"
     breakdown[[2]] <- paste0("-", breakdown[[2]])
