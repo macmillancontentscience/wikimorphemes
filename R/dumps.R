@@ -34,13 +34,16 @@ process_wiktionary_dump <- function(cache_dir = wikimorphemes_cache_dir()) {
   }
 
   # If they made it here, download the dump to a temp file.
+  cat("\nDownloading latest wiktionary dump.\n")
   dump_filename <- .download_latest_dump()
 
   # This is slow, but gets us the info to allow us to logically go through the
   # dump. MIGHT be an issue on systems with less RAM than mine, needs to be
   # tested.
+  cat("\nParsing page info.\n")
   page_info <- .find_page_info(dump_filename)
 
+  cat("\nParsing wikitext_en.\n")
   wikitext_en <- .parse_dump(dump_filename, page_info)
   attr(wikitext_en, "wt_update_date") <- dump_date
 
