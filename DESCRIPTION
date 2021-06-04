@@ -35,10 +35,8 @@ Imports:
     stringr (>= 1.4.0),
     tibble (>= 3.0.4),
     utils,
-    WikipediR (>= 1.6.0),
+    WikipediR (>= 1.5.0),
     xml2
-Remotes:
-    Ironholds/WikipediR#31
 Suggests: 
     testthat,
     knitr,

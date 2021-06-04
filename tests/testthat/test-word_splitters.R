@@ -139,11 +139,6 @@ test_that("process_word works", {
 })
 
 test_that("lookup corner cases work.", {
-  testthat::expect_identical(
-    process_word("upendings", use_lookup = FALSE),
-    c(prefix = "up", base_word = "end", inflection = "ing", inflection = "s")
-  )
-
   # Before saving the fake lookup, make sure a broken cache properly returns as
   # NULL.
   old_option <- getOption("wikimorphemes.dir")
