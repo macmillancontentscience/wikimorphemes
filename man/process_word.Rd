@@ -4,15 +4,26 @@
 \alias{process_word}
 \title{Split a Word into Pieces}
 \usage{
-process_word(word)
+process_word(word, use_cache = TRUE, cache_dir = wikimorphemes_cache_dir())
 }
 \arguments{
 \item{word}{Character; a word to process.}
+
+\item{use_cache}{Logical; should we use a cache if available, or go straight
+to the Wiktionary API. You might want to set this value to FALSE if you've
+made recent edits to Wiktionary or otherwise want to see if something has
+changed recently.}
+
+\item{cache_dir}{Character scalar; a path to a cache directory.}
 }
 \value{
 Character; the word split into pieces.
 }
 \description{
-Splits a word into constituent pieces. Wrapper around
-\code{\link{process_word_recursive}}, with some postprocessing.
+Recursively splits a word into constituent pieces, based on Wiktionary
+annotations. There are two main categories of word pieces used: inflections
+(standard verb/noun/comparative adjective forms, defined in practice here as
+endings identified in Wiktionary by inflectional function without reference
+to the actual form of the ending) and morphemes (typically denoted in
+Wiktionary by etymology templates).
 }

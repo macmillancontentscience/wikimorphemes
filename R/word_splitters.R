@@ -2,15 +2,25 @@
 
 #' Split a Word into Pieces
 #'
-#' Splits a word into constituent pieces. Wrapper around
-#' \code{\link{process_word_recursive}}, with some postprocessing.
+#' Recursively splits a word into constituent pieces, based on Wiktionary
+#' annotations. There are two main categories of word pieces used: inflections
+#' (standard verb/noun/comparative adjective forms, defined in practice here as
+#' endings identified in Wiktionary by inflectional function without reference
+#' to the actual form of the ending) and morphemes (typically denoted in
+#' Wiktionary by etymology templates).
 #'
-#' @inheritParams process_word_recursive
+#' @inheritParams .process_word_recursive
 #'
 #' @return Character; the word split into pieces.
 #' @export
-process_word <- function(word) {
-  processed_word_0 <- process_word_recursive(word)
+process_word <- function(word,
+                         use_cache = TRUE,
+                         cache_dir = wikimorphemes_cache_dir()) {
+  processed_word_0 <- .process_word_recursive(
+    word = word,
+    use_cache = use_cache,
+    cache_dir = cache_dir
+  )
   # This is the place where we want to remove hyphens. But then we need to add
   # the names back on.
   processed_word <- stringr::str_remove_all(processed_word_0, "\\-")
@@ -23,7 +33,7 @@ process_word <- function(word) {
   return(processed_word)
 }
 
-# process_word_recursive ------------------------------------------------------
+# .process_word_recursive ------------------------------------------------------
 
 #' Split a Word into Pieces
 #'
@@ -34,13 +44,22 @@ process_word <- function(word) {
 #' to the actual form of the ending) and morphemes (typically denoted in
 #' Wiktionary by etymology templates).
 #'
+#' @inheritParams .cache_lookup
 #' @param word Character; a word to process.
 #' @param current_depth Integer; current recursion depth.
 #' @param max_depth Integer; maximum recursion depth.
+#' @param use_cache Logical; should we use a cache if available, or go straight
+#'   to the Wiktionary API. You might want to set this value to FALSE if you've
+#'   made recent edits to Wiktionary or otherwise want to see if something has
+#'   changed recently.
 #'
 #' @return Character; the word split into pieces.
-#' @export
-process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
+#' @keywords internal
+.process_word_recursive <- function(word,
+                                    use_cache = TRUE,
+                                    cache_dir = wikimorphemes_cache_dir(),
+                                    current_depth = 1,
+                                    max_depth = 30) {
   if (current_depth > max_depth) {
     message("maximum recursion depth of ", max_depth, " reached.")
     return(word)
@@ -50,22 +69,43 @@ process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
     return(word)
   }
 
+  # If we're using the cache and they have this word cached, return that.
+  if (use_cache) {
+    lookup <- .cache_lookup(cache_dir)
+    if (!is.null(lookup)) {
+      morphemes <- dplyr::filter(lookup, .data$word == .env$word)$morphemes
+      if (length(morphemes)) {
+        return(morphemes[[1]])
+      }
+    }
+  }
+
   # First check for inflections.
-  inf_break <- split_inflections(word)
+  inf_break <- .split_inflections(word)
   if (length(inf_break) == 2) {
     # keep processing base_word (inflection endings need no further processing)
-    return(c(process_word_recursive(inf_break[1],
-                                    current_depth = current_depth + 1,
-                                    max_depth = max_depth),
-             inf_break[2]))
+    return(
+      c(
+        .process_word_recursive(
+          word = inf_break[1],
+          use_cache = use_cache,
+          cache_dir = cache_dir,
+          current_depth = current_depth + 1,
+          max_depth = max_depth
+        ),
+        inf_break[2]
+      )
+    )
   }
   # If we made it here, no inflections found. Check for morphemes...
-  mor_break <- split_morphemes(word)
+  mor_break <- .split_morphemes(word)
   if (length(mor_break) >= 2) {
     # process all pieces, including prefixes, etc.
     all_pieces <- purrr::map(
       mor_break,
-      process_word_recursive,
+      .process_word_recursive,
+      use_cache = use_cache,
+      cache_dir = cache_dir,
       current_depth = current_depth + 1,
       max_depth = max_depth
     )
@@ -79,15 +119,15 @@ process_word_recursive <- function(word, current_depth = 1, max_depth = 30) {
   return(word)
 }
 
-# split_inflections ------------------------------------------------------
+# .split_inflections ------------------------------------------------------
 
 #' Split Standard Verb, Noun, and Adjective Endings of a Word
 #'
 #' @param word Character; a word to process.
 #'
 #' @return Character; the word with standard endings split off.
-#' @export
-split_inflections <- function(word) {
+#' @keywords internal
+.split_inflections <- function(word) {
   english_content <- .fetch_english_word(word)
   if (length(english_content) == 0) {
     # not an english word
@@ -144,15 +184,15 @@ split_inflections <- function(word) {
 }
 
 
-# split_morphemes ------------------------------------------------------
+# .split_morphemes ------------------------------------------------------
 
 #' Split Word into Morphemes
 #'
 #' @param word Character; a word to process.
 #'
 #' @return Character; the word split into morphemes.
-#' @export
-split_morphemes <- function(word) {
+#' @keywords internal
+.split_morphemes <- function(word) {
   english_content <- .fetch_english_word(word)
   if (length(english_content) == 0) {
     # not an english word
@@ -432,7 +472,7 @@ split_morphemes <- function(word) {
 #' characters in it, such as spaces or apostrophes. To avoid downstream issues,
 #' we should do some clean-up on the output before continuing.
 #'
-#' @param split_word Character vector; the output from `split_morphemes` or
+#' @param split_word Character vector; the output from `.split_morphemes` or
 #'   similar.
 #'
 #' @return Character vector; the output split on any unexpected characters.

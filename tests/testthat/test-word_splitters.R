@@ -1,66 +1,66 @@
-test_that("split_inflections works", {
+test_that(".split_inflections works", {
 
   testthat::expect_identical(
-    split_inflections("lighter"),
+    .split_inflections("lighter"),
     c(base_word = "light", inflection = "er")
   )
 
   testthat::expect_identical(
-    split_inflections("lightest"),
+    .split_inflections("lightest"),
     c(base_word = "light", inflection = "est")
   )
 
   testthat::expect_identical(
-    split_inflections("lighting"),
+    .split_inflections("lighting"),
     c(base_word = "light", inflection = "ing")
   )
 
   testthat::expect_identical(
-    split_inflections("lights"),
+    .split_inflections("lights"),
     c(base_word = "light", inflection = "s")
   )
 
   testthat::expect_identical(
-    split_inflections("running"),
+    .split_inflections("running"),
     c(base_word = "run", inflection = "ing")
   )
 
   testthat::expect_identical(
-    split_inflections("scrapped"),
+    .split_inflections("scrapped"),
     c(base_word = "scrap", inflection = "ed")
   )
 
   testthat::expect_identical(
-    split_inflections("scraped"),
+    .split_inflections("scraped"),
     c(base_word = "scrape", inflection = "ed")
   )
 
   testthat::expect_identical(
-    split_inflections("escaping"),
+    .split_inflections("escaping"),
     c(base_word = "escape", inflection = "ing")
   )
 
   # non-splittable words come back unchanged
   testthat::expect_identical(
-    split_inflections("escape"),
+    .split_inflections("escape"),
     "escape"
   )
 
   # non-English words come back empty
   testthat::expect_identical(
-    split_inflections("bueno"),
+    .split_inflections("bueno"),
     character(0)
   )
 
   # irregular words come back unchanged
   testthat::expect_identical(
-    split_inflections("ground"),
+    .split_inflections("ground"),
     "ground"
   )
 
   # unclassified irregulars are caught by stringdist check.
   testthat::expect_identical(
-    split_inflections("best"),
+    .split_inflections("best"),
     "best"
   )
 
@@ -135,7 +135,7 @@ test_that("process_word works", {
 
   # check recursion limit
   testthat::expect_message(
-    process_word_recursive("lovingly", max_depth = 1),
+    .process_word_recursive("lovingly", max_depth = 1, use_cache = FALSE),
     "maximum recursion depth of 1 reached"
   )
 })

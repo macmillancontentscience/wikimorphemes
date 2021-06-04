@@ -14,8 +14,8 @@
 #' @inheritParams wikimorphemes_cache_dir
 #'
 #' @return The latest dump date, invisibly.
-#' @export
-process_wiktionary_dump <- function(cache_dir = wikimorphemes_cache_dir()) {
+#' @keywords internal
+.process_wiktionary_dump <- function(cache_dir = wikimorphemes_cache_dir()) {
   cache_dir <- wikimorphemes_cache_dir(cache_dir)
   cache_dir <- .validate_cache_dir_write(cache_dir)
 

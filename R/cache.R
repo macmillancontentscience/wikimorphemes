@@ -20,6 +20,30 @@
   }
 }
 
+#' Return a Cached Lookup Table
+#'
+#' @inheritParams wikimorphemes_cache_dir
+#'
+#' @return A tibble with columns word, morphemes (a list column of the breakdown
+#'   returned by \code{\link{process_word}}), and n_morphemes (the length of the
+#'   morphemes entry for this row).
+#' @keywords internal
+.cache_lookup <- function(cache_dir = wikimorphemes_cache_dir()) {
+  cache_dir <- wikimorphemes_cache_dir(cache_dir)
+  cache_file <- fs::path(
+    cache_dir,
+    "wikimorphemes",
+    ext = "rds"
+  )
+  if (file.exists(cache_file)) {
+    return(
+      readRDS(cache_file)
+    )
+  } else {
+    return(NULL)
+  }
+}
+
 #' Choose a Cache Directory for Wikimorphemes
 #'
 #' It is often useful to work with a local cache for this package. This function
