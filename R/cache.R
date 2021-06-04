@@ -117,7 +117,7 @@ download_wikimorphemes_lookup <- function(lookup_style = "full",
     mode = "wb"
   )
   if (status != 0) {
-    stop("Lookup download failed.")  # nocov
+    stop("Lookup download failed.") # nocov
   }
   return(invisible(TRUE))
   # nocov end
