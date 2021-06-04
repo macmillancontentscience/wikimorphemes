@@ -8,17 +8,20 @@
 #' @return Character; the word's page, in wikitext format.
 #' @keywords internal
 .fetch_word <- function(word) {
-  content <- tryCatch({ # nocov start
-    WikipediR::page_content(
-      "en",
-      "wiktionary",
-      page_name = word,
-      as_wikitext = TRUE,
-      clean_response = TRUE
-    )$wikitext$`*`
-  }, error = function(e) {
-    return(character(0)) # decide on this
-  })
+  content <- tryCatch(
+    { # nocov start
+      WikipediR::page_content(
+        "en",
+        "wiktionary",
+        page_name = word,
+        as_wikitext = TRUE,
+        clean_response = TRUE
+      )$wikitext$`*`
+    },
+    error = function(e) {
+      return(character(0)) # decide on this
+    }
+  )
 
   return(content) # nocov end
 }
@@ -314,7 +317,7 @@
   breakdown <- list(...)
   # not sure whether I need to allow for a single word piece that is the
   # original word. We can probably reject that, too.
-  if (original_word %in% breakdown ) {
+  if (original_word %in% breakdown) {
     return(FALSE)
   }
   return(TRUE)

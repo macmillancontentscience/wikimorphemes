@@ -111,8 +111,10 @@ process_word <- function(word,
     )
     processed_word <- unlist(all_pieces)
     # Fix names by dropping everything before the last "." and removing digits.
-    names(processed_word) <- stringr::str_remove_all(names(processed_word),
-                                                     "(.*\\.)|[0-9]*")
+    names(processed_word) <- stringr::str_remove_all(
+      names(processed_word),
+      "(.*\\.)|[0-9]*"
+    )
     return(processed_word)
   }
   # If we made it here, neither inflections nor morphemes found.
@@ -148,7 +150,7 @@ process_word <- function(word,
     # <pattern_to_detect> = <standard_ending>
     "\\{\\{plural of\\|en\\|([^}]+)\\}\\}" = "s",
     "\\{\\{en-third-person singular of\\|([^\\|\\}]+)" = "s",
-    "\\{\\{en-ing form of\\|([^\\|\\}]+)" = "ing",  # "escaping"
+    "\\{\\{en-ing form of\\|([^\\|\\}]+)" = "ing", # "escaping"
     "\\{\\{present participle of\\|en\\|([^\\|\\}]+)" = "ing",
     # I don't think this is a very general pattern. Maybe replace with
     # {{inflection of| }} template?
@@ -165,10 +167,10 @@ process_word <- function(word,
     base_word <- stringr::str_match(english_content, patt)[[2]]
     if (!is.na(base_word)) {
       if (.check_reconstructed_word(word, base_word, ending) &
-          .check_nonexplosive_word(word, base_word, ending)) {
+        .check_nonexplosive_word(word, base_word, ending)) {
         breakdown <- c(base_word, ending)
         names(breakdown) <- c(.baseword_name, .inflection_name)
-        candidate_breakdowns[[length(candidate_breakdowns)+1]] <- breakdown
+        candidate_breakdowns[[length(candidate_breakdowns) + 1]] <- breakdown
       }
     }
   }
@@ -212,14 +214,14 @@ process_word <- function(word,
   # Take out empty cases. This feels too messy.
   candidate_breakdowns <- candidate_breakdowns[
     purrr::map_lgl(candidate_breakdowns, rlang::has_length)
-    ]
+  ]
   # Take out candidates that are too far from original, or explosive.
   candidate_breakdowns <- candidate_breakdowns[
     purrr::map_lgl(candidate_breakdowns, function(bd) {
       .check_reconstructed_word(word, bd) &
         .check_nonexplosive_word(word, bd)
     })
-    ]
+  ]
 
   if (length(candidate_breakdowns) == 0) {
     return(word)
@@ -246,11 +248,15 @@ process_word <- function(word,
   prefix_patt <- .make_template_pattern("pre(fix)?")
   # Take 3rd element to account for optional capturing group: (fix)?
   match <- stringr::str_match(wt, prefix_patt)[[3]]
-  breakdown <- stringr::str_split(string = match,
-                                  pattern = stringr::coll("|"))[[1]]
+  breakdown <- stringr::str_split(
+    string = match,
+    pattern = stringr::coll("|")
+  )[[1]]
   # take out named parameters (marked with "=")
-  breakdown <- stringr::str_subset(string = breakdown,
-                                   pattern = "=", negate = TRUE)
+  breakdown <- stringr::str_subset(
+    string = breakdown,
+    pattern = "=", negate = TRUE
+  )
   if (!is.na(match)) {
     # `breakdown` should be length-2, but template might be badly formatted.
     if (length(breakdown) != 2) {
@@ -281,11 +287,15 @@ process_word <- function(word,
   suffix_patt <- .make_template_pattern("suf(fix)?")
   # Take 3rd element to account for optional capturing group: (fix)?
   match <- stringr::str_match(wt, suffix_patt)[[3]]
-  breakdown <- stringr::str_split(string = match,
-                                  pattern = stringr::coll("|"))[[1]]
+  breakdown <- stringr::str_split(
+    string = match,
+    pattern = stringr::coll("|")
+  )[[1]]
   # take out named parameters (marked with "=")
-  breakdown <- stringr::str_subset(string = breakdown,
-                                   pattern = "=", negate = TRUE)
+  breakdown <- stringr::str_subset(
+    string = breakdown,
+    pattern = "=", negate = TRUE
+  )
   if (!is.na(match)) {
     # `breakdown` should be length-2, but template might be badly formatted.
     if (length(breakdown) != 2) {
@@ -317,11 +327,15 @@ process_word <- function(word,
   affix_patt <- .make_template_pattern("af(fix)?")
   # Take 3rd element to account for optional capturing group: (fix)?
   match <- stringr::str_match(wt, affix_patt)[[3]]
-  breakdown <- stringr::str_split(string = match,
-                                  pattern = stringr::coll("|"))[[1]]
+  breakdown <- stringr::str_split(
+    string = match,
+    pattern = stringr::coll("|")
+  )[[1]]
   # take out named parameters (marked with "=")
-  breakdown <- stringr::str_subset(string = breakdown,
-                                   pattern = "=", negate = TRUE)
+  breakdown <- stringr::str_subset(
+    string = breakdown,
+    pattern = "=", negate = TRUE
+  )
   if (!is.na(match)) { #  https://github.com/jonthegeek/wikimorphemes/issues/10
     # This one is tricky. If a piece ends with "-", assign name "prefix". If
     # starts with "-", assign name "suffix". If "-" on both sides, "interfix".
@@ -330,7 +344,7 @@ process_word <- function(word,
     name_list[stringr::str_starts(breakdown, "-")] <- .suffix_name
     name_list[stringr::str_ends(breakdown, "-")] <- .prefix_name
     name_list[stringr::str_ends(breakdown, "-") &
-                stringr::str_starts(breakdown, "-")] <- .interfix_name
+      stringr::str_starts(breakdown, "-")] <- .interfix_name
     # # now remove hyphens from breakdown. No, not now. We keep hyphens in
     # word pieces at this point so that in the recursive breakdown
     # prefixes, etc get processed appropriately (e.g. so "-mas" doesn't
@@ -361,11 +375,15 @@ process_word <- function(word,
   confix_patt <- .make_template_pattern("con(fix)?")
   # Take 3rd element to account for optional capturing group: (fix)?
   match <- stringr::str_match(wt, confix_patt)[[3]]
-  breakdown <- stringr::str_split(string = match,
-                                  pattern = stringr::coll("|"))[[1]]
+  breakdown <- stringr::str_split(
+    string = match,
+    pattern = stringr::coll("|")
+  )[[1]]
   # take out named parameters (marked with "=")
-  breakdown <- stringr::str_subset(string = breakdown,
-                                   pattern = "=", negate = TRUE)
+  breakdown <- stringr::str_subset(
+    string = breakdown,
+    pattern = "=", negate = TRUE
+  )
   if (!is.na(match)) { #  https://github.com/jonthegeek/wikimorphemes/issues/10
     # if only two pieces, should be prefix + suffix
     if (length(breakdown) == 2) {
@@ -375,7 +393,6 @@ process_word <- function(word,
       breakdown[[2]] <- paste0("-", breakdown[[2]])
       names(breakdown) <- c(.prefix_name, .suffix_name)
       # standardize names: https://github.com/jonthegeek/wikimorphemes/issues/7
-
     } else if (length(breakdown) == 3) { # nocov start
       # I can't find an example that tests this. "bedewed" uses this template,
       # but gets caught by inflection splitter first.
@@ -384,8 +401,8 @@ process_word <- function(word,
       names(breakdown) <- c(.prefix_name, .baseword_name, .suffix_name)
     } else {
       return(character(0))
-      #https://github.com/jonthegeek/wikimorphemes/issues/10
-    }  # nocov end
+      # https://github.com/jonthegeek/wikimorphemes/issues/10
+    } # nocov end
   }
 
   return(breakdown)
@@ -408,11 +425,15 @@ process_word <- function(word,
   comp_patt <- .make_template_pattern("com(pound)?")
   # Take 3rd element to account for optional capturing group: (pound)?
   match <- stringr::str_match(wt, comp_patt)[[3]]
-  breakdown <- stringr::str_split(string = match,
-                                  pattern = stringr::coll("|"))[[1]]
+  breakdown <- stringr::str_split(
+    string = match,
+    pattern = stringr::coll("|")
+  )[[1]]
   # take out named parameters (marked with "=")
-  breakdown <- stringr::str_subset(string = breakdown,
-                                   pattern = "=", negate = TRUE)
+  breakdown <- stringr::str_subset(
+    string = breakdown,
+    pattern = "=", negate = TRUE
+  )
   if (!is.na(match)) { #  https://github.com/jonthegeek/wikimorphemes/issues/10
     # all components should be tagged as base words
     # !!  Find a better way that doesn't involve repeated names?
@@ -443,16 +464,22 @@ process_word <- function(word,
   asp_patt <- .make_template_pattern("alternative spelling of")
   match <- stringr::str_match(wt, asp_patt)[[2]]
   # First split out the template parameters.
-  breakdown <- stringr::str_split(string = match,
-                                  pattern = stringr::coll("|"))[[1]]
+  breakdown <- stringr::str_split(
+    string = match,
+    pattern = stringr::coll("|")
+  )[[1]]
   # Take out named parameters (marked with "=").
-  breakdown <- stringr::str_subset(string = breakdown,
-                                   pattern = "=", negate = TRUE)
+  breakdown <- stringr::str_subset(
+    string = breakdown,
+    pattern = "=", negate = TRUE
+  )
   # Alternative spelling is "simpler" if there's a space or hyphen.
-  #TODO Decide whether there are other cases we want to take alt. spelling.
+  # TODO Decide whether there are other cases we want to take alt. spelling.
   if (isTRUE(stringr::str_detect(string = breakdown, pattern = "\\s|\\-"))) {
-    breakdown <- stringr::str_split(string = breakdown,
-                                    pattern = "\\s|\\-")[[1]]
+    breakdown <- stringr::str_split(
+      string = breakdown,
+      pattern = "\\s|\\-"
+    )[[1]]
     # all components should be tagged as base words
     names(breakdown) <- rep(.baseword_name, length(breakdown))
     return(breakdown)
@@ -486,13 +513,12 @@ process_word <- function(word,
   # we *don't* want to remove hyphens at this point, as they are used to
   # indicate affixes.
   split_more <- unlist(purrr::map(split_word, stringr::str_split,
-                                  pattern = "[^[:alpha:]\\-]"),
-                       use.names = TRUE)
+    pattern = "[^[:alpha:]\\-]"
+  ),
+  use.names = TRUE
+  )
   split_more <- split_more[split_more != ""]
   # we're a little naughty and use non-unique names.
   names(split_more) <- stringr::str_remove_all(names(split_more), "[0-9]")
   return(split_more)
 }
-
-
-

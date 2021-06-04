@@ -6,12 +6,14 @@
 .suffix_name <- "suffix"
 .interfix_name <- "interfix"
 
-usethis::use_data(.baseword_name,
-                  .inflection_name,
-                  .prefix_name,
-                  .suffix_name,
-                  .interfix_name,
-                  internal = TRUE, overwrite = TRUE)
+usethis::use_data(
+  .baseword_name,
+  .inflection_name,
+  .prefix_name,
+  .suffix_name,
+  .interfix_name,
+  internal = TRUE, overwrite = TRUE
+)
 rm(.baseword_name)
 rm(.inflection_name)
 rm(.prefix_name)

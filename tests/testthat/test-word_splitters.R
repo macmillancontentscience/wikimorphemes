@@ -62,7 +62,6 @@ test_that(".split_inflections works", {
     .split_inflections("best"),
     "best"
   )
-
 })
 
 test_that("process_word works", {
@@ -73,8 +72,10 @@ test_that("process_word works", {
 
   testthat::expect_identical(
     process_word("disestablishmentarianism", use_lookup = FALSE),
-    c(prefix = "dis", base_word = "establish",
-      suffix = "ment", suffix = "arian", suffix = "ism")
+    c(
+      prefix = "dis", base_word = "establish",
+      suffix = "ment", suffix = "arian", suffix = "ism"
+    )
   )
 
   testthat::expect_identical(
