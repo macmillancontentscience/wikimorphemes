@@ -1,5 +1,4 @@
 test_that(".split_inflections works", {
-
   testthat::expect_identical(
     .split_inflections("lighter"),
     c(base_word = "light", inflection = "er")
@@ -66,31 +65,30 @@ test_that(".split_inflections works", {
 
 })
 
-
 test_that("process_word works", {
   testthat::expect_identical(
-    process_word("upendings"),
+    process_word("upendings", use_lookup = FALSE),
     c(prefix = "up", base_word = "end", inflection = "ing", inflection = "s")
   )
 
   testthat::expect_identical(
-    process_word("disestablishmentarianism"),
+    process_word("disestablishmentarianism", use_lookup = FALSE),
     c(prefix = "dis", base_word = "establish",
       suffix = "ment", suffix = "arian", suffix = "ism")
   )
 
   testthat::expect_identical(
-    process_word("unaffable"),
+    process_word("unaffable", use_lookup = FALSE),
     c(prefix = "un", base_word = "affable")
   )
 
   testthat::expect_identical(
-    process_word("pesticides"),
+    process_word("pesticides", use_lookup = FALSE),
     c(base_word = "pest", interfix = "i", suffix = "cide", inflection = "s")
   )
 
   testthat::expect_identical(
-    process_word("neurogenic"),
+    process_word("neurogenic", use_lookup = FALSE),
     # Think about breakdown of "genic" into "gene ic". Genic was aready marked
     # as a suffix; should it be broken further? For now, "-genic" is *not* split
     # further.
@@ -98,38 +96,38 @@ test_that("process_word works", {
   )
 
   testthat::expect_identical(
-    process_word("bedewed"),
+    process_word("bedewed", use_lookup = FALSE),
     c(prefix = "be", base_word = "dew", inflection = "ed")
   )
 
   testthat::expect_identical(
-    process_word("rainbow"),
+    process_word("rainbow", use_lookup = FALSE),
     c(base_word = "rain", base_word = "bow")
   )
 
   testthat::expect_identical(
-    process_word("clearinghouse"),
+    process_word("clearinghouse", use_lookup = FALSE),
     c(base_word = "clear", inflection = "ing", base_word = "house")
   )
 
   testthat::expect_identical(
-    process_word("passersby"),
+    process_word("passersby", use_lookup = FALSE),
     c(base_word = "pass", suffix = "er", base_word = "by", inflection = "s")
   )
 
   # DON'T process "-mas" into "ma s"
   testthat::expect_identical(
-    process_word("Christmas"),
+    process_word("Christmas", use_lookup = FALSE),
     c(base_word = "Christ", suffix = "mas")
   )
 
   testthat::expect_identical(
-    process_word("every"),
+    process_word("every", use_lookup = FALSE),
     c(base_word = "every")
   )
 
   testthat::expect_identical(
-    process_word("lenses"),
+    process_word("lenses", use_lookup = FALSE),
     c(base_word = "lens", inflection = "s")
   )
 
@@ -140,3 +138,43 @@ test_that("process_word works", {
   )
 })
 
+test_that("lookup corner cases work.", {
+  testthat::expect_identical(
+    process_word("upendings", use_lookup = FALSE),
+    c(prefix = "up", base_word = "end", inflection = "ing", inflection = "s")
+  )
+
+  # Before saving the fake lookup, make sure a broken cache properly returns as
+  # NULL.
+  old_option <- getOption("wikimorphemes.dir")
+
+  test_result <- .cache_lookup(cache_dir = tempdir())
+  expect_null(test_result)
+
+  memoise::drop_cache(.cache_lookup)(cache_dir = tempdir())
+  options(wikimorphemes.dir = old_option)
+
+  fake_lookup <- dplyr::tibble(
+    word = "upendings",
+    morphemes = list(
+      c(prefix = "down", base_word = "start")
+    ),
+    n_morphemes = 2L
+  )
+
+  saveRDS(
+    fake_lookup,
+    fs::path(
+      tempdir(),
+      "wikimorphemes",
+      ext = "rds"
+    )
+  )
+
+  testthat::expect_identical(
+    process_word(word = "upendings", use_lookup = TRUE, cache_dir = tempdir()),
+    c(prefix = "down", base_word = "start")
+  )
+  memoise::drop_cache(.cache_lookup)(cache_dir = tempdir())
+  options(wikimorphemes.dir = old_option)
+})

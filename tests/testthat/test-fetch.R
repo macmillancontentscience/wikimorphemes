@@ -23,3 +23,7 @@ test_that("We can pull relevant bits out of wikitext.", {
   test_result <- .fetch_english_word("founds")
   expect_lte(nchar(test_result), 500)
 })
+
+test_that("Corner cases work.", {
+  expect_false(.check_nonexplosive_word("word", "word"))
+})

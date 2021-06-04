@@ -2,12 +2,13 @@
 # some coverage.
 
 test_that("non-cache works as expected", {
+  old_cachedir <- getOption("wikimorphemes.dir")
   temp_dir <- tempdir()
   test_result <- .cache_wikitext(cache_dir = temp_dir)
   expect_null(test_result)
 
   memoise::drop_cache(.cache_wikitext)(cache_dir = temp_dir)
-  options(wikimorphemes.dir = NULL)
+  options(wikimorphemes.dir = old_cachedir)
 
   cache_file <- fs::path(
     temp_dir,
@@ -24,5 +25,5 @@ test_that("non-cache works as expected", {
     test_result,
     mtcars
   )
-  options(wikimorphemes.dir = NULL)
+  options(wikimorphemes.dir = old_cachedir)
 })
