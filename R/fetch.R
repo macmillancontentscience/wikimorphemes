@@ -8,8 +8,8 @@
 #' @return Character; the word's page, in wikitext format.
 #' @keywords internal
 .fetch_word <- function(word) {
-  content <- tryCatch(
-    { # nocov start
+  content <- tryCatch( # nocov start
+    {
       WikipediR::page_content(
         "en",
         "wiktionary",
