@@ -78,3 +78,47 @@ wikimorphemes_cache_dir <- function(cache_dir = NULL) {
 
   return(cache_dir)
 }
+
+#' Download a Wikimorphemes Lookup Table
+#'
+#' If you use this package a lot, we highly recommend downloading full dumps
+#' occasionally, rather than constantly hitting the Wiktionary API.
+#'
+#' @param lookup_style Character; currently the only available size is "full",
+#'   which is a 15MB rds file. I added this parameter to call out the size, and
+#'   to soon have options with smaller lookups.
+#' @inheritParams wikimorphemes_cache_dir
+#'
+#' @return TRUE (invisibly) on success.
+#' @export
+download_wikimorphemes_lookup <- function(lookup_style = "full",
+                                        cache_dir = wikimorphemes_cache_dir()) {
+  # nocov start; It's easier to just test this manually from time to time.
+  cache_dir <- wikimorphemes_cache_dir(cache_dir)
+  cache_file <- fs::path(
+    cache_dir,
+    "wikimorphemes",
+    ext = "rds"
+  )
+
+  if (lookup_style == "full") {
+    this_url <- .lookup_url
+  } else {
+    rlang::abort(
+      message = "Only full lookups are currently available.",
+      class = "lookup_style_error"
+    )
+  }
+
+  status <- utils::download.file(
+    url = .lookup_url,
+    destfile = cache_file,
+    method = "libcurl",
+    mode = "wb"
+  )
+  if (status != 0) {
+    stop("Lookup download failed.")  # nocov
+  }
+  return(invisible(TRUE))
+  # nocov end
+}
