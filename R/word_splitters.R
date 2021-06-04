@@ -14,11 +14,11 @@
 #' @return Character; the word split into pieces.
 #' @export
 process_word <- function(word,
-                         use_cache = TRUE,
+                         use_lookup = TRUE,
                          cache_dir = wikimorphemes_cache_dir()) {
   processed_word_0 <- .process_word_recursive(
     word = word,
-    use_cache = use_cache,
+    use_lookup = use_lookup,
     cache_dir = cache_dir
   )
   # This is the place where we want to remove hyphens. But then we need to add
@@ -48,15 +48,15 @@ process_word <- function(word,
 #' @param word Character; a word to process.
 #' @param current_depth Integer; current recursion depth.
 #' @param max_depth Integer; maximum recursion depth.
-#' @param use_cache Logical; should we use a cache if available, or go straight
-#'   to the Wiktionary API. You might want to set this value to FALSE if you've
-#'   made recent edits to Wiktionary or otherwise want to see if something has
-#'   changed recently.
+#' @param use_lookup Logical; should we use a cached lookup table if available,
+#'   or go straight to the Wiktionary API. You might want to set this value to
+#'   FALSE if you've made recent edits to Wiktionary or otherwise want to see if
+#'   something has changed recently.
 #'
 #' @return Character; the word split into pieces.
 #' @keywords internal
 .process_word_recursive <- function(word,
-                                    use_cache = TRUE,
+                                    use_lookup = TRUE,
                                     cache_dir = wikimorphemes_cache_dir(),
                                     current_depth = 1,
                                     max_depth = 30) {
@@ -70,7 +70,7 @@ process_word <- function(word,
   }
 
   # If we're using the cache and they have this word cached, return that.
-  if (use_cache) {
+  if (use_lookup) {
     lookup <- .cache_lookup(cache_dir)
     if (!is.null(lookup)) {
       morphemes <- dplyr::filter(lookup, .data$word == .env$word)$morphemes
@@ -88,7 +88,7 @@ process_word <- function(word,
       c(
         .process_word_recursive(
           word = inf_break[1],
-          use_cache = use_cache,
+          use_lookup = use_lookup,
           cache_dir = cache_dir,
           current_depth = current_depth + 1,
           max_depth = max_depth
@@ -104,7 +104,7 @@ process_word <- function(word,
     all_pieces <- purrr::map(
       mor_break,
       .process_word_recursive,
-      use_cache = use_cache,
+      use_lookup = use_lookup,
       cache_dir = cache_dir,
       current_depth = current_depth + 1,
       max_depth = max_depth

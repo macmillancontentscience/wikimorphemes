@@ -135,7 +135,7 @@ test_that("process_word works", {
 
   # check recursion limit
   testthat::expect_message(
-    .process_word_recursive("lovingly", max_depth = 1, use_cache = FALSE),
+    .process_word_recursive("lovingly", max_depth = 1, use_lookup = FALSE),
     "maximum recursion depth of 1 reached"
   )
 })
