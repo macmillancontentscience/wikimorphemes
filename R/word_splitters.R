@@ -80,8 +80,12 @@ process_word <- function(word,
     }
   }
 
+  # Get the English content once, so we don't have to hit the API multiple
+  # times.
+  english_content <- .fetch_english_word(word)
+
   # First check for inflections.
-  inf_break <- .split_inflections(word)
+  inf_break <- .split_inflections(english_content, word)
   if (length(inf_break) == 2) {
     # keep processing base_word (inflection endings need no further processing)
     return(
@@ -98,7 +102,7 @@ process_word <- function(word,
     )
   }
   # If we made it here, no inflections found. Check for morphemes...
-  mor_break <- .split_morphemes(word)
+  mor_break <- .split_morphemes(english_content, word)
   if (length(mor_break) >= 2) {
     # process all pieces, including prefixes, etc.
     all_pieces <- purrr::map(
@@ -125,12 +129,12 @@ process_word <- function(word,
 
 #' Split Standard Verb, Noun, and Adjective Endings of a Word
 #'
-#' @param word Character; a word to process.
+#' @inheritParams .process_word_recursive
+#' @param english_content The return from \code{\link{.fetch_english_word}}.
 #'
 #' @return Character; the word with standard endings split off.
 #' @keywords internal
-.split_inflections <- function(word) {
-  english_content <- .fetch_english_word(word)
+.split_inflections <- function(english_content, word) {
   if (length(english_content) == 0) {
     # not an english word
     # return word here ? https://github.com/jonthegeek/wikimorphemes/issues/10
@@ -190,12 +194,11 @@ process_word <- function(word,
 
 #' Split Word into Morphemes
 #'
-#' @param word Character; a word to process.
+#' @inheritParams .split_inflections
 #'
 #' @return Character; the word split into morphemes.
 #' @keywords internal
-.split_morphemes <- function(word) {
-  english_content <- .fetch_english_word(word)
+.split_morphemes <- function(english_content, word) {
   if (length(english_content) == 0) {
     # not an english word
     #  https://github.com/jonthegeek/wikimorphemes/issues/10

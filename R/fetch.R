@@ -216,7 +216,7 @@
       depth = depth + 1L
     )
 
-    # Remove bad etymologies and irrelevant sections at this level.
+    # Remove secondary etymologies and irrelevant sections at this level.
     extra_etymologies <- stringr::str_subset(
       unique(names(sections)),
       "Etymology (\\d{2,})|[02-9]"

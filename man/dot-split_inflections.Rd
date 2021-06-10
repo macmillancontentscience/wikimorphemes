@@ -4,9 +4,11 @@
 \alias{.split_inflections}
 \title{Split Standard Verb, Noun, and Adjective Endings of a Word}
 \usage{
-.split_inflections(word)
+.split_inflections(english_content, word)
 }
 \arguments{
+\item{english_content}{The return from \code{\link{.fetch_english_word}}.}
+
 \item{word}{Character; a word to process.}
 }
 \value{

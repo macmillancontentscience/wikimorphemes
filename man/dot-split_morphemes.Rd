@@ -4,9 +4,11 @@
 \alias{.split_morphemes}
 \title{Split Word into Morphemes}
 \usage{
-.split_morphemes(word)
+.split_morphemes(english_content, word)
 }
 \arguments{
+\item{english_content}{The return from \code{\link{.fetch_english_word}}.}
+
 \item{word}{Character; a word to process.}
 }
 \value{

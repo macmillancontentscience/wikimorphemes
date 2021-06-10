@@ -1,65 +1,73 @@
 test_that(".split_inflections works", {
+  # Set up a function so we don't have to fetch each time, now that the fetch
+  # happens outside of the .split_ functions. I'm starting it with .test_ to
+  # avoid any possible collisions.
+  .test_fetch_then_split <- function(word) {
+    english_content <- .fetch_english_word(word)
+    return(.split_inflections(english_content, word))
+  }
+
   testthat::expect_identical(
-    .split_inflections("lighter"),
+    .test_fetch_then_split("lighter"),
     c(base_word = "light", inflection = "er")
   )
 
   testthat::expect_identical(
-    .split_inflections("lightest"),
+    .test_fetch_then_split("lightest"),
     c(base_word = "light", inflection = "est")
   )
 
   testthat::expect_identical(
-    .split_inflections("lighting"),
+    .test_fetch_then_split("lighting"),
     c(base_word = "light", inflection = "ing")
   )
 
   testthat::expect_identical(
-    .split_inflections("lights"),
+    .test_fetch_then_split("lights"),
     c(base_word = "light", inflection = "s")
   )
 
   testthat::expect_identical(
-    .split_inflections("running"),
+    .test_fetch_then_split("running"),
     c(base_word = "run", inflection = "ing")
   )
 
   testthat::expect_identical(
-    .split_inflections("scrapped"),
+    .test_fetch_then_split("scrapped"),
     c(base_word = "scrap", inflection = "ed")
   )
 
   testthat::expect_identical(
-    .split_inflections("scraped"),
+    .test_fetch_then_split("scraped"),
     c(base_word = "scrape", inflection = "ed")
   )
 
   testthat::expect_identical(
-    .split_inflections("escaping"),
+    .test_fetch_then_split("escaping"),
     c(base_word = "escape", inflection = "ing")
   )
 
   # non-splittable words come back unchanged
   testthat::expect_identical(
-    .split_inflections("escape"),
+    .test_fetch_then_split("escape"),
     "escape"
   )
 
   # non-English words come back empty
   testthat::expect_identical(
-    .split_inflections("bueno"),
+    .test_fetch_then_split("bueno"),
     character(0)
   )
 
   # irregular words come back unchanged
   testthat::expect_identical(
-    .split_inflections("ground"),
+    .test_fetch_then_split("ground"),
     "ground"
   )
 
   # unclassified irregulars are caught by stringdist check.
   testthat::expect_identical(
-    .split_inflections("best"),
+    .test_fetch_then_split("best"),
     "best"
   )
 })
