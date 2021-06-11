@@ -14,23 +14,17 @@
 #' @return Character; the word split into pieces.
 #' @export
 process_word <- function(word,
-                         use_lookup = TRUE,
+                         max_lookup_age_days = Inf,
                          cache_dir = wikimorphemes_cache_dir()) {
-  processed_word_0 <- .process_word_recursive(
-    word = word,
-    use_lookup = use_lookup,
-    cache_dir = cache_dir
+  return(
+    # We have this unexported function purely to hide the depth stuff from the
+    # end user.
+    .process_word_recursive(
+      word = word,
+      max_lookup_age_days = max_lookup_age_days,
+      cache_dir = cache_dir
+    )
   )
-  # This is the place where we want to remove hyphens. But then we need to add
-  # the names back on.
-  processed_word <- stringr::str_remove_all(processed_word_0, "\\-")
-  names(processed_word) <- names(processed_word_0)
-
-  # Fill in missing name for single words.
-  if (length(processed_word) == 1) {
-    names(processed_word) <- .baseword_name
-  }
-  return(processed_word)
 }
 
 # .process_word_recursive ------------------------------------------------------
@@ -48,18 +42,22 @@ process_word <- function(word,
 #' @param word Character; a word to process.
 #' @param current_depth Integer; current recursion depth.
 #' @param max_depth Integer; maximum recursion depth.
-#' @param use_lookup Logical; should we use a cached lookup table if available,
-#'   or go straight to the Wiktionary API. You might want to set this value to
-#'   FALSE if you've made recent edits to Wiktionary or otherwise want to see if
-#'   something has changed recently.
+#' @param max_lookup_age_days Numeric; the maximum age that the cached lookup
+#'   can be without requiring a call to the Wiktionary API. You might want to
+#'   set this value to 0 if you've made recent edits to Wiktionary or otherwise
+#'   want to see if something has changed recently.
 #'
 #' @return Character; the word split into pieces.
 #' @keywords internal
 .process_word_recursive <- function(word,
-                                    use_lookup = TRUE,
+                                    max_lookup_age_days = Inf,
                                     cache_dir = wikimorphemes_cache_dir(),
                                     current_depth = 1,
                                     max_depth = 30) {
+  # If we return the original word, we want it to be a main piece, ie
+  # .baseword_name, unless it already has a different name.
+  names(word) <- names(word) %||% .baseword_name
+
   if (current_depth > max_depth) {
     message("maximum recursion depth of ", max_depth, " reached.")
     return(word)
@@ -70,19 +68,29 @@ process_word <- function(word,
   }
 
   # If we're using the cache and they have this word cached, return that.
-  if (use_lookup) {
-    lookup <- .cache_lookup(cache_dir)
-    if (!is.null(lookup)) {
-      morphemes <- dplyr::filter(lookup, .data$word == .env$word)$morphemes
-      if (length(morphemes)) {
-        return(morphemes[[1]])
-      }
+  if (max_lookup_age_days > 0) {
+    .populate_env_lookup(cache_dir)
+    morphemes <- dplyr::filter(
+      .wikimorphemes_env$lookup,
+      .data$word == .env$word,
+      difftime(
+        lubridate::now(), .data$timestamp, units = "days"
+      ) <= max_lookup_age_days
+    )$morphemes
+    if (length(morphemes)) {
+      return(morphemes[[1]])
     }
   }
 
   # Get the English content once, so we don't have to hit the API multiple
   # times.
   english_content <- .fetch_english_word(word)
+
+  # If there's no wikitext, return the word unbroken.
+  if (length(english_content) == 0) {
+    # not a known English word
+    return(word)
+  }
 
   # First check for inflections.
   inf_break <- .split_inflections(english_content, word)
@@ -92,7 +100,7 @@ process_word <- function(word,
       c(
         .process_word_recursive(
           word = inf_break[1],
-          use_lookup = use_lookup,
+          max_lookup_age_days = max_lookup_age_days,
           cache_dir = cache_dir,
           current_depth = current_depth + 1,
           max_depth = max_depth
@@ -103,22 +111,23 @@ process_word <- function(word,
   }
   # If we made it here, no inflections found. Check for morphemes...
   mor_break <- .split_morphemes(english_content, word)
-  if (length(mor_break) >= 2) {
+  if (length(mor_break) > 1) {
     # process all pieces, including prefixes, etc.
     all_pieces <- purrr::map(
       mor_break,
       .process_word_recursive,
-      use_lookup = use_lookup,
+      max_lookup_age_days = max_lookup_age_days,
       cache_dir = cache_dir,
       current_depth = current_depth + 1,
       max_depth = max_depth
     )
-    processed_word <- unlist(all_pieces)
-    # Fix names by dropping everything before the last "." and removing digits.
-    names(processed_word) <- stringr::str_remove_all(
-      names(processed_word),
-      "(.*\\.)|[0-9]*"
-    )
+    processed_word <- .correct_names(all_pieces)
+
+    # # Fix names by dropping everything before the last "." and removing digits.
+    # names(processed_word) <- stringr::str_remove_all(
+    #   names(processed_word),
+    #   "(.*\\.)|[0-9]*"
+    # )
     return(processed_word)
   }
   # If we made it here, neither inflections nor morphemes found.
@@ -136,9 +145,7 @@ process_word <- function(word,
 #' @keywords internal
 .split_inflections <- function(english_content, word) {
   if (length(english_content) == 0) {
-    # not an english word
-    # return word here ? https://github.com/jonthegeek/wikimorphemes/issues/10
-    return(character(0))
+    return(word)
   }
 
   if (.detect_irregular_wt(english_content)) {
@@ -152,17 +159,17 @@ process_word <- function(word,
   # https://github.com/jonthegeek/wikimorphemes/issues/11
   patterns_endings <- c(
     # <pattern_to_detect> = <standard_ending>
-    "\\{\\{plural of\\|en\\|([^}]+)\\}\\}" = "s",
-    "\\{\\{en-third-person singular of\\|([^\\|\\}]+)" = "s",
-    "\\{\\{en-ing form of\\|([^\\|\\}]+)" = "ing", # "escaping"
-    "\\{\\{present participle of\\|en\\|([^\\|\\}]+)" = "ing",
+    "\\{\\{plural of\\|en\\|([^}]+)\\}\\}" = "-s",
+    "\\{\\{en-third-person singular of\\|([^\\|\\}]+)" = "-s",
+    "\\{\\{en-ing form of\\|([^\\|\\}]+)" = "-ing", # "escaping"
+    "\\{\\{present participle of\\|en\\|([^\\|\\}]+)" = "-ing",
     # I don't think this is a very general pattern. Maybe replace with
     # {{inflection of| }} template?
-    "The action of the verb '''to \\[\\[([^\\]]+)\\]\\]'''" = "ing",
-    "\\{\\{past participle of\\|en\\|([^\\|\\}]+)" = "ed",
-    "\\{\\{en-past of\\|([^\\|\\}]+)" = "ed",
-    "\\{\\{en-comparative of\\|([^\\|\\}]+)" = "er",
-    "\\{\\{en-superlative of\\|([^\\|\\}]+)" = "est"
+    "The action of the verb '''to \\[\\[([^\\]]+)\\]\\]'''" = "-ing",
+    "\\{\\{past participle of\\|en\\|([^\\|\\}]+)" = "-ed",
+    "\\{\\{en-past of\\|([^\\|\\}]+)" = "-ed",
+    "\\{\\{en-comparative of\\|([^\\|\\}]+)" = "-er",
+    "\\{\\{en-superlative of\\|([^\\|\\}]+)" = "-est"
   )
 
   candidate_breakdowns <- vector(mode = "list")
@@ -200,9 +207,7 @@ process_word <- function(word,
 #' @keywords internal
 .split_morphemes <- function(english_content, word) {
   if (length(english_content) == 0) {
-    # not an english word
-    #  https://github.com/jonthegeek/wikimorphemes/issues/10
-    return(character(0)) # nocov
+    return(word) # nocov
   }
 
   candidate_breakdowns <- list(
@@ -348,11 +353,6 @@ process_word <- function(word,
     name_list[stringr::str_ends(breakdown, "-")] <- .prefix_name
     name_list[stringr::str_ends(breakdown, "-") &
       stringr::str_starts(breakdown, "-")] <- .interfix_name
-    # # now remove hyphens from breakdown. No, not now. We keep hyphens in
-    # word pieces at this point so that in the recursive breakdown
-    # prefixes, etc get processed appropriately (e.g. so "-mas" doesn't
-    # turn into "ma s").
-    # breakdown <- stringr::str_remove_all(breakdown, "\\-")
     names(breakdown) <- name_list
   }
 
@@ -515,13 +515,56 @@ process_word <- function(word,
 
   # we *don't* want to remove hyphens at this point, as they are used to
   # indicate affixes.
-  split_more <- unlist(purrr::map(split_word, stringr::str_split,
-    pattern = "[^[:alpha:]\\-]"
-  ),
-  use.names = TRUE
+  split_more <- unlist(
+    purrr::map(
+      split_word,
+      stringr::str_split,
+      pattern = "[^[:alpha:]\\-]"
+    ),
+    use.names = TRUE
   )
   split_more <- split_more[split_more != ""]
   # we're a little naughty and use non-unique names.
   names(split_more) <- stringr::str_remove_all(names(split_more), "[0-9]")
   return(split_more)
+}
+
+#' Deal with Piece Names
+#'
+#' @param all_pieces A morpheme breakdown, which will likely be a 2-level named
+#'   list.
+#'
+#' @return The morpheme breakdown as a character vector with the desired names.
+#' @keywords internal
+.correct_names <- function(all_pieces) {
+  processed_names <- purrr::imap(
+    all_pieces,
+    function(this_piece, this_name) {
+      if (length(this_piece) == 1) {
+        names(this_piece) <- this_name
+      }
+      return(this_piece)
+    }
+  )
+  return(purrr::flatten_chr(processed_names))
+}
+
+#' Remove Hyphens from Affixes
+#'
+#' For some applications, it's convenient to remove hyphens from morpheme
+#' pieces. That's more tedious than it should be.
+#'
+#' @param processed_word A word processed into pieces by \code{\link{process_word}}.
+#'
+#' @return The processed word without hyphens.
+#' @export
+#'
+#' @examples
+#' processed_word <- process_word("Christmas")
+#' processed_word
+#' remove_hyphens(processed_word)
+remove_hyphens <- function(processed_word) {
+  processed_word_2 <- stringr::str_remove_all(processed_word, "\\-")
+  names(processed_word_2) <- names(processed_word)
+  return(processed_word_2)
 }

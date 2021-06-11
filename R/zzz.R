@@ -6,4 +6,5 @@
   .split_morphemes <<- memoise::memoise(.split_morphemes) # nocov
   .cache_wikitext <<- memoise::memoise(.cache_wikitext) # nocov
   .cache_lookup <<- memoise::memoise(.cache_lookup) # nocov
+  .populate_env_lookup <<- memoise::memoise(.populate_env_lookup) # nocov
 }

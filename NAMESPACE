@@ -2,6 +2,7 @@
 
 export(download_wikimorphemes_lookup)
 export(process_word)
+export(remove_hyphens)
 export(wikimorphemes_cache_dir)
 importFrom(magrittr,"%>%")
 importFrom(memoise,memoise)

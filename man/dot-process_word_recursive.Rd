@@ -6,7 +6,7 @@
 \usage{
 .process_word_recursive(
   word,
-  use_lookup = TRUE,
+  max_lookup_age_days = Inf,
   cache_dir = wikimorphemes_cache_dir(),
   current_depth = 1,
   max_depth = 30
@@ -15,10 +15,10 @@
 \arguments{
 \item{word}{Character; a word to process.}
 
-\item{use_lookup}{Logical; should we use a cached lookup table if available,
-or go straight to the Wiktionary API. You might want to set this value to
-FALSE if you've made recent edits to Wiktionary or otherwise want to see if
-something has changed recently.}
+\item{max_lookup_age_days}{Numeric; the maximum age that the cached lookup
+can be without requiring a call to the Wiktionary API. You might want to
+set this value to 0 if you've made recent edits to Wiktionary or otherwise
+want to see if something has changed recently.}
 
 \item{cache_dir}{Character scalar; a path to a cache directory.}
 
