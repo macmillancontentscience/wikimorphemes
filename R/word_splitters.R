@@ -63,7 +63,7 @@ process_word <- function(word,
     return(word)
   }
   # we never want to split short words (say, three chars or less)
-  if (nchar(word) <= 3) {
+  if (nchar(word) < 4) {
     return(word)
   }
 
@@ -87,8 +87,9 @@ process_word <- function(word,
   english_content <- .fetch_english_word(word)
 
   # If there's no wikitext, return the word unbroken.
-  if (length(english_content) == 0) {
+  if (!length(english_content)) {
     # not a known English word
+    .update_env_lookup(unname(word), word)
     return(word)
   }
 
@@ -96,18 +97,18 @@ process_word <- function(word,
   inf_break <- .split_inflections(english_content, word)
   if (length(inf_break) == 2) {
     # keep processing base_word (inflection endings need no further processing)
-    return(
-      c(
-        .process_word_recursive(
-          word = inf_break[1],
-          max_lookup_age_days = max_lookup_age_days,
-          cache_dir = cache_dir,
-          current_depth = current_depth + 1,
-          max_depth = max_depth
-        ),
-        inf_break[2]
-      )
+    pieces <- c(
+      .process_word_recursive(
+        word = inf_break[1],
+        max_lookup_age_days = max_lookup_age_days,
+        cache_dir = cache_dir,
+        current_depth = current_depth + 1,
+        max_depth = max_depth
+      ),
+      inf_break[2]
     )
+    .update_env_lookup(word, pieces)
+    return(pieces)
   }
   # If we made it here, no inflections found. Check for morphemes...
   mor_break <- .split_morphemes(english_content, word)
@@ -128,9 +129,11 @@ process_word <- function(word,
     #   names(processed_word),
     #   "(.*\\.)|[0-9]*"
     # )
+    .update_env_lookup(word, processed_word)
     return(processed_word)
   }
   # If we made it here, neither inflections nor morphemes found.
+  .update_env_lookup(word, word)
   return(word)
 }
 

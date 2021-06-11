@@ -38,12 +38,16 @@ assign(
 }
 
 .update_env_lookup <- function(word, morphemes) {
-  .wikimorphemes_env$lookup[.wikimorphemes_env$lookup$word == word] <- NULL
+  word <- unname(word)
+  .wikimorphemes_env$lookup <- .wikimorphemes_env$lookup[
+    .wikimorphemes_env$lookup$word != word,
+  ]
+
   .wikimorphemes_env$lookup <- dplyr::bind_rows(
     .wikimorphemes_env$lookup,
     tibble::tibble(
       word = word,
-      morphemes = morphemes,
+      morphemes = list(morphemes),
       n_morphemes = length(morphemes),
       # This appears to be the easiest way to create a length-0 datetime.
       timestamp = lubridate::now()
