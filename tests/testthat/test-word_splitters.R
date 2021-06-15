@@ -148,6 +148,14 @@ test_that("process_word works", {
   )
 })
 
+test_that("process_word deals with fake words gracefully.", {
+  word <- "sdjklf"
+  test_result <- process_word(word, use_lookup = FALSE)
+  expect_identical(test_result, rlang::set_names(word, "base_word"))
+  test_result <- process_word(word, use_lookup = TRUE)
+  expect_identical(test_result, rlang::set_names(word, "base_word"))
+})
+
 test_that("Can use a lookup other than the default.", {
   # Before saving the fake lookup, make sure a broken cache properly returns as
   # NULL.

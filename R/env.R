@@ -20,6 +20,8 @@ assign(
 #' @return Logical, invisibly; whether a cached lookup exists in that location.
 #' @keywords internal
 .populate_env_lookup <- function(cache_dir = wikimorphemes_cache_dir()) {
+  # nocov start; it's hard to specifically test this, partly because it's
+  # memoised.
   cached_lookup <- .cache_lookup(cache_dir)
   if (!is.null(cached_lookup)) {
     if (nrow(.wikimorphemes_env$lookup)) {
@@ -34,6 +36,7 @@ assign(
   } else {
     return(invisible(FALSE))
   }
+  # nocov end
 }
 
 #' Update the Environment Lookup
@@ -109,6 +112,7 @@ assign(
 #' @return TRUE, invisibly.
 #' @export
 save_wikimorphemes_lookup <- function(cache_dir = wikimorphemes_cache_dir()) {
+  # nocov start
   # Make sure cache_dir is well-formed.
   cache_dir <- wikimorphemes_cache_dir(cache_dir)
 
@@ -121,4 +125,5 @@ save_wikimorphemes_lookup <- function(cache_dir = wikimorphemes_cache_dir()) {
   )
 
   return(invisible(TRUE))
+  # nocov end
 }

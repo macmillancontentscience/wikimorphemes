@@ -56,6 +56,11 @@ process_word <- function(word,
                                     cache_dir = wikimorphemes_cache_dir(),
                                     current_depth = 1,
                                     max_depth = 30) {
+  # Validate the cache_dir. Various things might use it even if they tell us not
+  # to use the lookup (ie, in the rare instance that they have the full wikitext
+  # cache), so let's make sure it's valid and the option knows about it.
+  cache_dir <- wikimorphemes_cache_dir(cache_dir)
+
   # If we return the original word, we want it to be a main piece, ie
   # .baseword_name, unless it already has a different name.
   names(word) <- names(word) %||% .baseword_name
@@ -547,24 +552,4 @@ process_word <- function(word,
     }
   )
   return(purrr::flatten_chr(processed_names))
-}
-
-#' Remove Hyphens from Affixes
-#'
-#' For some applications, it's convenient to remove hyphens from morpheme
-#' pieces. That's more tedious than it should be.
-#'
-#' @param processed_word A word processed into pieces by \code{\link{process_word}}.
-#'
-#' @return The processed word without hyphens.
-#' @export
-#'
-#' @examples
-#' processed_word <- process_word("Christmas")
-#' processed_word
-#' remove_hyphens(processed_word)
-remove_hyphens <- function(processed_word) {
-  processed_word_2 <- stringr::str_remove_all(processed_word, "\\-")
-  names(processed_word_2) <- names(processed_word)
-  return(processed_word_2)
 }
