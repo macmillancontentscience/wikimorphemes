@@ -32,7 +32,7 @@
   cache_dir <- wikimorphemes_cache_dir(cache_dir)
   cache_file <- fs::path(
     cache_dir,
-    "wikimorphemes",
+    "wikimorphemes_lookup",
     ext = "rds"
   )
   if (file.exists(cache_file)) {
@@ -97,7 +97,7 @@ download_wikimorphemes_lookup <- function(lookup_style = "full",
   cache_dir <- wikimorphemes_cache_dir(cache_dir)
   cache_file <- fs::path(
     cache_dir,
-    "wikimorphemes",
+    "wikimorphemes_lookup",
     ext = "rds"
   )
 

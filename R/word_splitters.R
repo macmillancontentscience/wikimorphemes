@@ -14,14 +14,14 @@
 #' @return Character; the word split into pieces.
 #' @export
 process_word <- function(word,
-                         max_lookup_age_days = Inf,
+                         use_lookup = TRUE,
                          cache_dir = wikimorphemes_cache_dir()) {
   return(
     # We have this unexported function purely to hide the depth stuff from the
     # end user.
     .process_word_recursive(
       word = word,
-      max_lookup_age_days = max_lookup_age_days,
+      use_lookup = use_lookup,
       cache_dir = cache_dir
     )
   )
@@ -42,15 +42,17 @@ process_word <- function(word,
 #' @param word Character; a word to process.
 #' @param current_depth Integer; current recursion depth.
 #' @param max_depth Integer; maximum recursion depth.
-#' @param max_lookup_age_days Numeric; the maximum age that the cached lookup
-#'   can be without requiring a call to the Wiktionary API. You might want to
-#'   set this value to 0 if you've made recent edits to Wiktionary or otherwise
-#'   want to see if something has changed recently.
+#' @param use_lookup Logical; whether to use a cached lookup table (if available)
+#'   or always process the word from scratch. If the word is not available in
+#'   the lookup, processing (and likely a call to the Wiktionary API) will still
+#'   occur. You might want to set this value to FALSE if you've made recent
+#'   edits to Wiktionary or otherwise want to see if something has changed
+#'   recently.
 #'
 #' @return Character; the word split into pieces.
 #' @keywords internal
 .process_word_recursive <- function(word,
-                                    max_lookup_age_days = Inf,
+                                    use_lookup = TRUE,
                                     cache_dir = wikimorphemes_cache_dir(),
                                     current_depth = 1,
                                     max_depth = 30) {
@@ -58,27 +60,26 @@ process_word <- function(word,
   # .baseword_name, unless it already has a different name.
   names(word) <- names(word) %||% .baseword_name
 
-  if (current_depth > max_depth) {
-    message("maximum recursion depth of ", max_depth, " reached.")
-    return(word)
-  }
-  # we never want to split short words (say, three chars or less)
+  # we never want to split short words (say, three chars or less).
   if (nchar(word) < 4) {
     return(word)
   }
 
-  # If we're using the cache and they have this word cached, return that.
-  if (max_lookup_age_days > 0) {
-    .populate_env_lookup(cache_dir)
-    morphemes <- dplyr::filter(
-      .wikimorphemes_env$lookup,
-      .data$word == .env$word,
-      difftime(
-        lubridate::now(), .data$timestamp, units = "days"
-      ) <= max_lookup_age_days
-    )$morphemes
+  if (current_depth > max_depth) {
+    message(
+      "maximum recursion depth of ",
+      max_depth,
+      " reached for word ",
+      unname(word)
+    )
+    return(.update_env_lookup(word, word, use_lookup))
+  }
+
+  # See if we can use the lookup table.
+  if (use_lookup) {
+    morphemes <- .pull_from_lookup(word, cache_dir)
     if (length(morphemes)) {
-      return(morphemes[[1]])
+      return(morphemes)
     }
   }
 
@@ -89,8 +90,7 @@ process_word <- function(word,
   # If there's no wikitext, return the word unbroken.
   if (!length(english_content)) {
     # not a known English word
-    .update_env_lookup(unname(word), word)
-    return(word)
+    return(.update_env_lookup(word, word, use_lookup))
   }
 
   # First check for inflections.
@@ -100,15 +100,14 @@ process_word <- function(word,
     pieces <- c(
       .process_word_recursive(
         word = inf_break[1],
-        max_lookup_age_days = max_lookup_age_days,
+        use_lookup = use_lookup,
         cache_dir = cache_dir,
         current_depth = current_depth + 1,
         max_depth = max_depth
       ),
       inf_break[2]
     )
-    .update_env_lookup(word, pieces)
-    return(pieces)
+    return(.update_env_lookup(word, pieces, use_lookup))
   }
   # If we made it here, no inflections found. Check for morphemes...
   mor_break <- .split_morphemes(english_content, word)
@@ -117,7 +116,7 @@ process_word <- function(word,
     all_pieces <- purrr::map(
       mor_break,
       .process_word_recursive,
-      max_lookup_age_days = max_lookup_age_days,
+      use_lookup = use_lookup,
       cache_dir = cache_dir,
       current_depth = current_depth + 1,
       max_depth = max_depth
@@ -129,12 +128,10 @@ process_word <- function(word,
     #   names(processed_word),
     #   "(.*\\.)|[0-9]*"
     # )
-    .update_env_lookup(word, processed_word)
-    return(processed_word)
+    return(.update_env_lookup(word, processed_word, use_lookup))
   }
   # If we made it here, neither inflections nor morphemes found.
-  .update_env_lookup(word, word)
-  return(word)
+  return(.update_env_lookup(word, word, use_lookup))
 }
 
 # .split_inflections ------------------------------------------------------
