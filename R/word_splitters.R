@@ -42,12 +42,12 @@ process_word <- function(word,
 #' @param word Character; a word to process.
 #' @param current_depth Integer; current recursion depth.
 #' @param max_depth Integer; maximum recursion depth.
-#' @param use_lookup Logical; whether to use a cached lookup table (if available)
-#'   or always process the word from scratch. If the word is not available in
-#'   the lookup, processing (and likely a call to the Wiktionary API) will still
-#'   occur. You might want to set this value to FALSE if you've made recent
-#'   edits to Wiktionary or otherwise want to see if something has changed
-#'   recently.
+#' @param use_lookup Logical; whether to use a cached lookup table (if
+#'   available) or always process the word from scratch. If the word is not
+#'   available in the lookup, processing (and likely a call to the Wiktionary
+#'   API) will still occur. You might want to set this value to FALSE if you've
+#'   made recent edits to Wiktionary or otherwise want to see if something has
+#'   changed recently.
 #'
 #' @return Character; the word split into pieces.
 #' @keywords internal
@@ -127,12 +127,6 @@ process_word <- function(word,
       max_depth = max_depth
     )
     processed_word <- .correct_names(all_pieces)
-
-    # # Fix names by dropping everything before the last "." and removing digits.
-    # names(processed_word) <- stringr::str_remove_all(
-    #   names(processed_word),
-    #   "(.*\\.)|[0-9]*"
-    # )
     return(.update_env_lookup(word, processed_word, use_lookup))
   }
   # If we made it here, neither inflections nor morphemes found.

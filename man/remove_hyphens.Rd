@@ -7,7 +7,8 @@
 remove_hyphens(processed_word)
 }
 \arguments{
-\item{processed_word}{A word processed into pieces by \code{\link{process_word}}.}
+\item{processed_word}{A word processed into pieces by
+\code{\link{process_word}}.}
 }
 \value{
 The processed word without hyphens.

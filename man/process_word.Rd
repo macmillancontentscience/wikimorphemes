@@ -9,12 +9,12 @@ process_word(word, use_lookup = TRUE, cache_dir = wikimorphemes_cache_dir())
 \arguments{
 \item{word}{Character; a word to process.}
 
-\item{use_lookup}{Logical; whether to use a cached lookup table (if available)
-or always process the word from scratch. If the word is not available in
-the lookup, processing (and likely a call to the Wiktionary API) will still
-occur. You might want to set this value to FALSE if you've made recent
-edits to Wiktionary or otherwise want to see if something has changed
-recently.}
+\item{use_lookup}{Logical; whether to use a cached lookup table (if
+available) or always process the word from scratch. If the word is not
+available in the lookup, processing (and likely a call to the Wiktionary
+API) will still occur. You might want to set this value to FALSE if you've
+made recent edits to Wiktionary or otherwise want to see if something has
+changed recently.}
 
 \item{cache_dir}{Character scalar; a path to a cache directory.}
 }

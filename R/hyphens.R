@@ -3,7 +3,8 @@
 #' For some applications, it's convenient to remove hyphens from morpheme
 #' pieces. That's more tedious than it should be.
 #'
-#' @param processed_word A word processed into pieces by \code{\link{process_word}}.
+#' @param processed_word A word processed into pieces by
+#'   \code{\link{process_word}}.
 #'
 #' @return The processed word without hyphens.
 #' @export

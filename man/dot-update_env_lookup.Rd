@@ -11,12 +11,12 @@
 
 \item{morphemes}{The processed morphemes to save in the cache.}
 
-\item{use_lookup}{Logical; whether to use a cached lookup table (if available)
-or always process the word from scratch. If the word is not available in
-the lookup, processing (and likely a call to the Wiktionary API) will still
-occur. You might want to set this value to FALSE if you've made recent
-edits to Wiktionary or otherwise want to see if something has changed
-recently.}
+\item{use_lookup}{Logical; whether to use a cached lookup table (if
+available) or always process the word from scratch. If the word is not
+available in the lookup, processing (and likely a call to the Wiktionary
+API) will still occur. You might want to set this value to FALSE if you've
+made recent edits to Wiktionary or otherwise want to see if something has
+changed recently.}
 }
 \value{
 The morphemes, with any post-processing that's needed on all
