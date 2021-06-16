@@ -7,7 +7,7 @@
 .clean_output(split_word)
 }
 \arguments{
-\item{split_word}{Character vector; the output from \code{split_morphemes} or
+\item{split_word}{Character vector; the output from \code{.split_morphemes} or
 similar.}
 }
 \value{
