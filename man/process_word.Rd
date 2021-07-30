@@ -4,10 +4,19 @@
 \alias{process_word}
 \title{Split a Word into Pieces}
 \usage{
-process_word(word, use_lookup = TRUE, cache_dir = wikimorphemes_cache_dir())
+process_word(
+  word,
+  sight_words = sight_words,
+  use_lookup = TRUE,
+  cache_dir = wikimorphemes_cache_dir()
+)
 }
 \arguments{
 \item{word}{Character; a word to process.}
+
+\item{sight_words}{Character vector; words to \emph{not} break down further.
+Defaults to the included \code{sight_words} list; to include no sight words,
+pass in an empty character vector to this parameter.}
 
 \item{use_lookup}{Logical; whether to use a cached lookup table (if
 available) or always process the word from scratch. If the word is not

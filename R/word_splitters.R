@@ -14,6 +14,7 @@
 #' @return Character; the word split into pieces.
 #' @export
 process_word <- function(word,
+                         sight_words = sight_words,
                          use_lookup = TRUE,
                          cache_dir = wikimorphemes_cache_dir()) {
   return(
@@ -40,6 +41,9 @@ process_word <- function(word,
 #'
 #' @inheritParams .cache_lookup
 #' @param word Character; a word to process.
+#' @param sight_words Character vector; words to *not* break down further.
+#'   Defaults to the included `sight_words` list; to include no sight words,
+#'   pass in an empty character vector to this parameter.
 #' @param current_depth Integer; current recursion depth.
 #' @param max_depth Integer; maximum recursion depth.
 #' @param use_lookup Logical; whether to use a cached lookup table (if
@@ -52,6 +56,7 @@ process_word <- function(word,
 #' @return Character; the word split into pieces.
 #' @keywords internal
 .process_word_recursive <- function(word,
+                                    sight_words = sight_words,
                                     use_lookup = TRUE,
                                     cache_dir = wikimorphemes_cache_dir(),
                                     current_depth = 1,
@@ -67,6 +72,10 @@ process_word <- function(word,
 
   # we never want to split short words (say, three chars or less).
   if (nchar(word) < 4) {
+    return(word)
+  }
+  # If word is in sight word list, stop now
+  if (word %in% sight_words) {
     return(word)
   }
 
