@@ -174,10 +174,15 @@ process_word <- function(word,
   candidate_breakdowns <- vector(mode = "list")
   for (patt in names(patterns_endings)) {
     ending <- patterns_endings[[patt]]
+    clean_ending <- stringr::str_replace_all(ending,
+                                             pattern = "\\-",
+                                             replacement = "")
     base_word <- stringr::str_match(english_content, patt)[[2]]
     if (!is.na(base_word)) {
       if (.check_reconstructed_word(word, base_word, ending) &
-        .check_nonexplosive_word(word, base_word, ending)) {
+          .check_nonexplosive_word(word, base_word, ending) &
+          # word should actually end with ending. No "ridden" -> "ride -ed"!
+          stringr::str_ends(word, clean_ending)) {
         breakdown <- c(base_word, ending)
         names(breakdown) <- c(.baseword_name, .inflection_name)
         candidate_breakdowns[[length(candidate_breakdowns) + 1]] <- breakdown

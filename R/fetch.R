@@ -296,7 +296,9 @@
   threshold <- 2 # seems right, so hard-coding for now
   # take out hyphens (maybe all non-alpha?)
   # https://github.com/jonthegeek/wikimorphemes/issues/8
+  # ... take out from *both* sides of equation to do fair check.
   breakdown <- stringr::str_remove_all(c(...), "\\-")
+  original_word <- stringr::str_remove_all(original_word, "\\-")
 
   reconstructed_word <- paste0(breakdown, collapse = "")
   dist <- stringdist::stringdist(original_word, reconstructed_word)
