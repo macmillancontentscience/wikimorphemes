@@ -14,7 +14,7 @@
 #' @return Character; the word split into pieces.
 #' @export
 process_word <- function(word,
-                         sight_words = sight_words,
+                         sight_words = fry_sight_words,
                          use_lookup = TRUE,
                          cache_dir = wikimorphemes_cache_dir()) {
   return(
@@ -22,6 +22,7 @@ process_word <- function(word,
     # end user.
     .process_word_recursive(
       word = word,
+      sight_words = sight_words,
       use_lookup = use_lookup,
       cache_dir = cache_dir
     )
@@ -56,7 +57,7 @@ process_word <- function(word,
 #' @return Character; the word split into pieces.
 #' @keywords internal
 .process_word_recursive <- function(word,
-                                    sight_words = sight_words,
+                                    sight_words = fry_sight_words,
                                     use_lookup = TRUE,
                                     cache_dir = wikimorphemes_cache_dir(),
                                     current_depth = 1,
@@ -114,6 +115,7 @@ process_word <- function(word,
     pieces <- c(
       .process_word_recursive(
         word = inf_break[1],
+        sight_words = sight_words,
         use_lookup = use_lookup,
         cache_dir = cache_dir,
         current_depth = current_depth + 1,
@@ -130,6 +132,7 @@ process_word <- function(word,
     all_pieces <- purrr::map(
       mor_break,
       .process_word_recursive,
+      sight_words = sight_words,
       use_lookup = use_lookup,
       cache_dir = cache_dir,
       current_depth = current_depth + 1,

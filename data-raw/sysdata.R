@@ -29,9 +29,9 @@ rm(.lookup_url)
 # Words with obvious breakdowns (e.g. "words" -> "word -s") were replaced with
 # the base word. A few cases of less-obvious breakdowns were similarly accepted
 # (e.g. "length" was excluded from the list to allow the breakdown "long -th").
-sight_words <- readLines("data-raw/sight_words.txt")
+fry_sight_words <- readLines("data-raw/sight_words.txt")
 usethis::use_data(
-  sight_words,
+  fry_sight_words,
   internal = FALSE, overwrite = TRUE
 )
-rm(sight_words)
+rm(fry_sight_words)

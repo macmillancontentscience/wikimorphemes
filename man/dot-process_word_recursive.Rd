@@ -6,7 +6,7 @@
 \usage{
 .process_word_recursive(
   word,
-  sight_words = sight_words,
+  sight_words = fry_sight_words,
   use_lookup = TRUE,
   cache_dir = wikimorphemes_cache_dir(),
   current_depth = 1,

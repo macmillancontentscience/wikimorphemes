@@ -14,4 +14,4 @@
 #'
 #' @format Character vector.
 #' @source \url{https://sightwords.com/sight-words/fry/#lists}
-"sight_words"
+"fry_sight_words"
