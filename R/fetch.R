@@ -350,8 +350,9 @@
   }
 
   if (clean_inflection != "s") {
-    # the only exception we're considering now is weird plurals
-    return(FALSE)
+    # the only exception we're considering now is weird plurals. I don't
+    # have a current test case for this yet.
+    return(FALSE) # nocov
   }
 
   # Insert the "s" at every position (except the end) to see if we can recover
