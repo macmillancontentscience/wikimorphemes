@@ -194,7 +194,7 @@ process_word <- function(word,
       if (.check_reconstructed_word(word, base_word, ending) &
           .check_nonexplosive_word(word, base_word, ending) &
           # word should actually end with ending. No "ridden" -> "ride -ed"!
-          stringr::str_ends(word, clean_ending)) {
+          .check_inflection_ending(word, base_word, ending)) {
         breakdown <- c(base_word, ending)
         names(breakdown) <- c(.baseword_name, .inflection_name)
         candidate_breakdowns[[length(candidate_breakdowns) + 1]] <- breakdown
