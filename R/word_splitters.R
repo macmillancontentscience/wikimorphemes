@@ -14,6 +14,7 @@
 #' @return Character; the word split into pieces.
 #' @export
 process_word <- function(word,
+                         sight_words = fry_sight_words,
                          use_lookup = TRUE,
                          cache_dir = wikimorphemes_cache_dir()) {
   return(
@@ -21,6 +22,7 @@ process_word <- function(word,
     # end user.
     .process_word_recursive(
       word = word,
+      sight_words = sight_words,
       use_lookup = use_lookup,
       cache_dir = cache_dir
     )
@@ -40,6 +42,9 @@ process_word <- function(word,
 #'
 #' @inheritParams .cache_lookup
 #' @param word Character; a word to process.
+#' @param sight_words Character vector; words to *not* break down further.
+#'   Defaults to the included `sight_words` list; to include no sight words,
+#'   pass in an empty character vector to this parameter.
 #' @param current_depth Integer; current recursion depth.
 #' @param max_depth Integer; maximum recursion depth.
 #' @param use_lookup Logical; whether to use a cached lookup table (if
@@ -52,6 +57,7 @@ process_word <- function(word,
 #' @return Character; the word split into pieces.
 #' @keywords internal
 .process_word_recursive <- function(word,
+                                    sight_words = fry_sight_words,
                                     use_lookup = TRUE,
                                     cache_dir = wikimorphemes_cache_dir(),
                                     current_depth = 1,
@@ -67,6 +73,10 @@ process_word <- function(word,
 
   # we never want to split short words (say, three chars or less).
   if (nchar(word) < 4) {
+    return(word)
+  }
+  # If word is in sight word list, stop now
+  if (word %in% sight_words) {
     return(word)
   }
 
@@ -105,6 +115,7 @@ process_word <- function(word,
     pieces <- c(
       .process_word_recursive(
         word = inf_break[1],
+        sight_words = sight_words,
         use_lookup = use_lookup,
         cache_dir = cache_dir,
         current_depth = current_depth + 1,
@@ -121,6 +132,7 @@ process_word <- function(word,
     all_pieces <- purrr::map(
       mor_break,
       .process_word_recursive,
+      sight_words = sight_words,
       use_lookup = use_lookup,
       cache_dir = cache_dir,
       current_depth = current_depth + 1,
@@ -174,10 +186,15 @@ process_word <- function(word,
   candidate_breakdowns <- vector(mode = "list")
   for (patt in names(patterns_endings)) {
     ending <- patterns_endings[[patt]]
+    clean_ending <- stringr::str_replace_all(ending,
+                                             pattern = "\\-",
+                                             replacement = "")
     base_word <- stringr::str_match(english_content, patt)[[2]]
     if (!is.na(base_word)) {
       if (.check_reconstructed_word(word, base_word, ending) &
-        .check_nonexplosive_word(word, base_word, ending)) {
+          .check_nonexplosive_word(word, base_word, ending) &
+          # word should actually end with ending. No "ridden" -> "ride -ed"!
+          .check_inflection_ending(word, base_word, ending)) {
         breakdown <- c(base_word, ending)
         names(breakdown) <- c(.baseword_name, .inflection_name)
         candidate_breakdowns[[length(candidate_breakdowns) + 1]] <- breakdown

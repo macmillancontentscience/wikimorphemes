@@ -120,6 +120,8 @@ test_that("process_word works", {
     c(base_word = "clear", inflection = "-ing", base_word = "house")
   )
 
+  # We now require inflected words to actually end with their inflection, but
+  # make an exception to accomodate weird plurals like "passersby"
   testthat::expect_identical(
     process_word("passersby", use_lookup = FALSE),
     c(base_word = "pass", suffix = "-er", base_word = "by", inflection = "-s")
@@ -145,6 +147,12 @@ test_that("process_word works", {
   testthat::expect_message(
     .process_word_recursive("lovingly", max_depth = 1, use_lookup = FALSE),
     "maximum recursion depth of 1 reached"
+  )
+
+  # The sight words list changes some things...
+  testthat::expect_identical(
+    process_word("into", sight_words = fry_sight_words, use_lookup = FALSE),
+    c(base_word = "into") # without sight words: "in" + "to"
   )
 })
 
