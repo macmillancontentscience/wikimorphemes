@@ -3,15 +3,17 @@
 
 test_that("non-cache works as expected", {
   old_cachedir <- getOption("wikimorphemes.dir")
-  temp_dir <- tempdir()
-  test_result <- .cache_wikitext(cache_dir = temp_dir)
+  on.exit({
+    options(wikimorphemes.dir = old_cachedir)
+    memoise::forget(.cache_wikitext)
+  })
+  set_wikimorphemes_cache_dir(tempdir())
+  memoise::forget(.cache_wikitext)
+  test_result <- .cache_wikitext()
   expect_null(test_result)
 
-  memoise::drop_cache(.cache_wikitext)(cache_dir = temp_dir)
-  options(wikimorphemes.dir = old_cachedir)
-
   cache_file <- fs::path(
-    temp_dir,
+    tempdir(),
     "wikitext_en",
     ext = "rds"
   )
@@ -19,11 +21,15 @@ test_that("non-cache works as expected", {
     mtcars,
     cache_file
   )
+  on.exit(
+    unlink(cache_file),
+    add = TRUE
+  )
+  memoise::forget(.cache_wikitext)
 
-  test_result <- .cache_wikitext(cache_dir = temp_dir)
+  test_result <- .cache_wikitext()
   expect_identical(
     test_result,
     mtcars
   )
-  options(wikimorphemes.dir = old_cachedir)
 })

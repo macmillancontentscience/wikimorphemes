@@ -151,7 +151,11 @@ test_that("process_word works", {
 
   # The sight words list changes some things...
   testthat::expect_identical(
-    process_word("into", sight_words = fry_sight_words, use_lookup = FALSE),
+    process_word(
+      "into",
+      sight_words = default_sight_words(),
+      use_lookup = FALSE
+    ),
     c(base_word = "into") # without sight words: "in" + "to"
   )
 })
@@ -168,12 +172,15 @@ test_that("Can use a lookup other than the default.", {
   # Before saving the fake lookup, make sure a broken cache properly returns as
   # NULL.
   old_option <- getOption("wikimorphemes.dir")
+  on.exit(
+    options(wikimorphemes.dir = old_option)
+  )
+  set_wikimorphemes_cache_dir(tempdir())
 
-  test_result <- .cache_lookup(cache_dir = tempdir())
+  memoise::forget(.cache_lookup)
+  reset_lookup()
+  test_result <- .cache_lookup()
   expect_null(test_result)
-
-  memoise::drop_cache(.cache_lookup)(cache_dir = tempdir())
-  options(wikimorphemes.dir = old_option)
 
   fake_lookup <- dplyr::tibble(
     word = "upendings",
@@ -184,33 +191,30 @@ test_that("Can use a lookup other than the default.", {
     timestamp = lubridate::now()
   )
 
+  filename <- fs::path(
+    tempdir(),
+    "wikimorphemes_lookup",
+    ext = "rds"
+  )
+
   saveRDS(
     fake_lookup,
-    fs::path(
-      tempdir(),
-      "wikimorphemes_lookup",
-      ext = "rds"
-    )
+    filename
+  )
+  on.exit(
+    {
+      unlink(filename)
+      memoise::forget(.cache_lookup)
+    },
+    add = TRUE
   )
 
-  # Reset the env.
-  .wikimorphemes_env$lookup <- tibble::tibble(
-    word = character(0),
-    morphemes = vector(mode = "list", length = 0),
-    n_morphemes = integer(0)
-  )
+  # Now we need to force a reload of the cache.
+  memoise::forget(.cache_lookup)
+  memoise::forget(.populate_env_lookup)
 
   testthat::expect_identical(
-    process_word(word = "upendings", cache_dir = tempdir()),
+    process_word(word = "upendings"),
     c(prefix = "down", base_word = "start")
   )
-  memoise::drop_cache(.cache_lookup)(cache_dir = tempdir())
-  unlink(
-    fs::path(
-      tempdir(),
-      "wikimorphemes_lookup",
-      ext = "rds"
-    )
-  )
-  options(wikimorphemes.dir = old_option)
 })

@@ -4,10 +4,7 @@
 \alias{.populate_env_lookup}
 \title{Populate the Environment Lookup with Saved Results}
 \usage{
-.populate_env_lookup(cache_dir = wikimorphemes_cache_dir())
-}
-\arguments{
-\item{cache_dir}{Character scalar; a path to a cache directory.}
+.populate_env_lookup()
 }
 \value{
 Logical, invisibly; whether a cached lookup exists in that location.

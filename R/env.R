@@ -15,16 +15,16 @@ assign(
 
 #' Populate the Environment Lookup with Saved Results
 #'
-#' @inheritParams wikimorphemes_cache_dir
-#'
 #' @return Logical, invisibly; whether a cached lookup exists in that location.
 #' @keywords internal
-.populate_env_lookup <- function(cache_dir = wikimorphemes_cache_dir()) {
+.populate_env_lookup <- function() {
   # nocov start; it's hard to specifically test this, partly because it's
   # memoised.
-  cached_lookup <- .cache_lookup(cache_dir)
+  cached_lookup <- .cache_lookup()
   if (!is.null(cached_lookup)) {
-    if (nrow(.wikimorphemes_env$lookup)) {
+    if (
+      !is.null(.wikimorphemes_env$lookup) && nrow(.wikimorphemes_env$lookup)
+    ) {
       .wikimorphemes_env$lookup <- dplyr::bind_rows(
         .wikimorphemes_env$lookup,
         cached_lookup
@@ -86,19 +86,35 @@ assign(
 #' @return A character vector of morphemes, or a length-0 character vector if no
 #'   morphemes are found.
 #' @keywords internal
-.pull_from_lookup <- function(word, cache_dir) {
-  # The populate step only runs once per session per cache_dir, loading the data
+.pull_from_lookup <- function(word) {
+  # The populate step only runs once per session, loading the data
   # from disk.
-  .populate_env_lookup(cache_dir)
+  .populate_env_lookup()
 
   this_row <- .wikimorphemes_env$lookup[
     .wikimorphemes_env$lookup$word == word,
   ]
-  if (nrow(this_row)) {
+  if (!is.null(this_row) && nrow(this_row)) {
     return(this_row$morphemes[[1]])
   } else {
     return(character(0))
   }
+}
+
+#' Reset the Lookup Cache
+#'
+#' Sometimes it is useful to reset the lookup cache, for example if you have
+#' made a change on wiktionary and wish to use the newest result. This function
+#' resets the in-memory lookup cache. This is likely a very rare situation.
+#'
+#' @return TRUE (invisibly) on success.
+#' @export
+#'
+#' @examples
+#' reset_lookup()
+reset_lookup <- function() {
+  .wikimorphemes_env$lookup <- NULL
+  return(invisible(TRUE))
 }
 
 #' Save the Lookup Cache to Disk
@@ -107,21 +123,20 @@ assign(
 #' words you have parsed. Use this function to update (or create) an on-disk
 #' version of this lookup table.
 #'
-#' @inheritParams wikimorphemes_cache_dir
-#'
 #' @return TRUE, invisibly.
 #' @export
-save_wikimorphemes_lookup <- function(cache_dir = wikimorphemes_cache_dir()) {
+save_wikimorphemes_lookup <- function() {
   # nocov start
-  # Make sure cache_dir is well-formed.
-  cache_dir <- wikimorphemes_cache_dir(cache_dir)
 
-  # Make sure any existing lookup in this location is in the environment.
-  .populate_env_lookup(cache_dir)
+  # Make sure any existing lookup is in the environment.
+  .populate_env_lookup()
+
+  # Make sure they have write permissions.
+  filename <- .generate_cache_write_filename("wikimorphemes_lookup")
 
   saveRDS(
-    .wikimorphemes_env$lookup,
-    fs::path(wikimorphemes_cache_dir(), "wikimorphemes_lookup", ext = "rds")
+    dplyr::arrange(.wikimorphemes_env$lookup, .data$word),
+    filename
   )
 
   return(invisible(TRUE))

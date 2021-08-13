@@ -6,7 +6,14 @@
 .suffix_name <- "suffix"
 .interfix_name <- "interfix"
 
-.lookup_url <- "https://query.data.world/s/4aswd2cntkjux6nu6zmgps6krp2eqm"
+.lookup_url <- "https://query.data.world/s/x2bjzurhumq3tda6zqaherq6w5vngj"
+
+# The sight word list was derived from the Fry sight words:
+# https://sightwords.com/sight-words/fry/#lists
+# Words with obvious breakdowns (e.g. "words" -> "word -s") were replaced with
+# the base word. A few cases of less-obvious breakdowns were similarly accepted
+# (e.g. "length" was excluded from the list to allow the breakdown "long -th").
+.fry_sight_words <- sort(readLines("data-raw/sight_words.txt"))
 
 usethis::use_data(
   .baseword_name,
@@ -15,6 +22,7 @@ usethis::use_data(
   .suffix_name,
   .interfix_name,
   .lookup_url,
+  .fry_sight_words,
   internal = TRUE, overwrite = TRUE
 )
 rm(.baseword_name)
@@ -23,15 +31,4 @@ rm(.prefix_name)
 rm(.suffix_name)
 rm(.interfix_name)
 rm(.lookup_url)
-
-# The sight word list was derived from the Fry sight words:
-# https://sightwords.com/sight-words/fry/#lists
-# Words with obvious breakdowns (e.g. "words" -> "word -s") were replaced with
-# the base word. A few cases of less-obvious breakdowns were similarly accepted
-# (e.g. "length" was excluded from the list to allow the breakdown "long -th").
-fry_sight_words <- readLines("data-raw/sight_words.txt")
-usethis::use_data(
-  fry_sight_words,
-  internal = FALSE, overwrite = TRUE
-)
-rm(fry_sight_words)
+rm(.fry_sight_words)

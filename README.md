@@ -4,10 +4,14 @@
 # wikimorphemes
 
 <!-- badges: start -->
+
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
 The goal of wikimorphemes is to provide tools for extracting morphemes
-from Wiktionary entries.
+from Wiktionary entries. The wikimorphemes api is *not yet stable* and
+may change (most notably to provide a vectorized processor).
 
 ## Installation
 
@@ -26,13 +30,28 @@ And the development version from [GitHub](https://github.com/) with:
 devtools::install_github("jonthegeek/wikimorphemes")
 ```
 
-## Working on wikimorphemes
+## Examples
 
-If you are going to work on this package, please let us know, and we’ll
-get you a copy of the cache currently used by the package. We are
-working on making it easier to share that cache, and to make the tests
-work both with and without the cache, but for now the package expects
-you to have a cache available.
+The main function in wikimorphemes is `process_word`.
+
+``` r
+library(wikimorphemes)
+process_word("unaffable")
+#>    prefix base_word 
+#>     "un-" "affable"
+process_word("understandable")
+#>    base_word       suffix 
+#> "understand"      "-able"
+process_word("standing")
+#>  base_word inflection 
+#>    "stand"     "-ing"
+```
+
+## Contributing to {wikimorphemes}
+
+If you are going to work on this package, please begin by running
+`download_wikimorphemes_lookup()`. This will download the latest cached
+version of the lookup (10.7MB), which will then be used in tests.
 
 ## Code of Conduct
 

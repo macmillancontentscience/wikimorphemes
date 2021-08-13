@@ -2,17 +2,14 @@
 % Please edit documentation in R/dumps.R
 \name{.validate_cache_dir_write}
 \alias{.validate_cache_dir_write}
-\title{Make Sure a Cache Dir is Writable}
+\title{Make Sure the Cache Dir is Writable}
 \usage{
-.validate_cache_dir_write(cache_dir)
-}
-\arguments{
-\item{cache_dir}{Character scalar; a path to a cache directory.}
+.validate_cache_dir_write()
 }
 \value{
 The cache_dir, if it is writable.
 }
 \description{
-Make Sure a Cache Dir is Writable
+Make Sure the Cache Dir is Writable
 }
 \keyword{internal}

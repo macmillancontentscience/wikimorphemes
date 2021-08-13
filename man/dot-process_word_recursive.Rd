@@ -6,9 +6,8 @@
 \usage{
 .process_word_recursive(
   word,
-  sight_words = fry_sight_words,
+  sight_words = default_sight_words(),
   use_lookup = TRUE,
-  cache_dir = wikimorphemes_cache_dir(),
   current_depth = 1,
   max_depth = 30
 )
@@ -26,8 +25,6 @@ available in the lookup, processing (and likely a call to the Wiktionary
 API) will still occur. You might want to set this value to FALSE if you've
 made recent edits to Wiktionary or otherwise want to see if something has
 changed recently.}
-
-\item{cache_dir}{Character scalar; a path to a cache directory.}
 
 \item{current_depth}{Integer; current recursion depth.}
 

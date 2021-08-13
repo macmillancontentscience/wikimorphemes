@@ -9,32 +9,21 @@
 #' wiktionary dump, to create a local version of the English words from the
 #' latest dump.
 #'
-#' This function requires a lot of RAM and is very slow.
+#' This function requires a lot of RAM and is very slow. It took about 4 hrs to
+#' complete on a machine with 64GB or RAM.
 #'
-#' @inheritParams wikimorphemes_cache_dir
-#'
-#' @return The latest dump date, invisibly.
+#' @return A logical scalar (invisibly) indicating whether the data was updated.
 #' @keywords internal
-.process_wiktionary_dump <- function(cache_dir = wikimorphemes_cache_dir()) {
-  cache_dir <- wikimorphemes_cache_dir(cache_dir)
-  cache_dir <- .validate_cache_dir_write(cache_dir)
-
-  # I'm going to need the dump date whether or not they already have a cache.
+.create_wikitext_en <- function() {
+  cache_filename <- .generate_cache_write_filename(filename = "wikitext_en")
   dump_date <- .get_latest_dump_date()
-
-  # Check if they already have a cache.
-  cache_filename <- fs::path(
-    cache_dir,
-    "wikitext_en",
-    ext = "rds"
-  )
 
   if (.cache_up_to_date(cache_filename, dump_date)) {
     rlang::inform(
       "The existing cache is already up to date.",
       class = "no_new_dump"
     )
-    return(invisible(dump_date))
+    return(invisible(FALSE))
   }
 
   # If they made it here, download the dump to a temp file.
@@ -52,16 +41,36 @@
   attr(wikitext_en, "wt_update_date") <- dump_date
 
   saveRDS(wikitext_en, cache_filename)
-  return(invisible(dump_date))
+  return(invisible(TRUE))
 }
 
-#' Make Sure a Cache Dir is Writable
+#' Generate Filenames for Wikitext Cache Files
 #'
-#' @inheritParams wikimorphemes_cache_dir
+#' @param filename Character scalar; the filename minus the extension, such as
+#'   "wikitext_en".
+#' @param ext Character scalar; the file extension (default "rds").
+#'
+#' @return A character scalar validated path for writing.
+#' @keywords internal
+.generate_cache_write_filename <- function(filename, ext = "rds") {
+  cache_dir <- getOption("wikimorphemes.dir")
+  cache_dir <- .validate_cache_dir_write()
+
+  return(
+    fs::path(
+      cache_dir,
+      filename,
+      ext = "rds"
+    )
+  )
+}
+
+#' Make Sure the Cache Dir is Writable
 #'
 #' @return The cache_dir, if it is writable.
 #' @keywords internal
-.validate_cache_dir_write <- function(cache_dir) {
+.validate_cache_dir_write <- function() {
+  cache_dir <- getOption("wikimorphemes.dir")
   # Check that they have read/write on the cache path. I don't validate the path
   # otherwise since I export the function that does so.
   if (file.access(cache_dir, 3) != 0) {
@@ -189,19 +198,30 @@
   total_rows <- nrow(page_info)
   word_info <- vector(mode = "list", length = total_rows)
 
+  show_progress <- requireNamespace("progress", quietly = TRUE)
+  if (show_progress) {
+    pb <- progress::progress_bar$new(
+      format = "  processed *:current* of :total pages (:percent) eta: :eta",
+      total = total_rows,
+      clear = FALSE,
+      width = 60
+    )
+  }
+
+  # Since it's difficult (logistically) to start/stop this function, I don't
+  # return a partial result on.exit. That contrasts with .create_lookup, where I
+  # *can* logically start/stop the process and pick up wherever I was. This
+  # difference is due to the nature of the gigantic temp file that is read
+  # piece-by-piece during this process.
+
   # Now read page, which we can do simply by reading the number of lines in each
   # total_lines entry. This should be a for loop because we need each one to
   # read after the previous one, so the connection advances.
   for (i in seq_along(page_info$total_lines)) {
-    if (i %% 10000 == 0) {
-      cat(
-        "Working on row",
-        i,
-        "of",
-        total_rows,
-        "\n"
-      )
+    if (show_progress & i %% 10000 == 0) {
+      pb$tick(10000)
     }
+
     next_line <- page_info$start_line[[i]]
 
     # There will be garbage at the start. Jump forward.
@@ -241,7 +261,17 @@
 
       # ns 0 is an actual article.
       if (ns == 0L) {
-        this_entry <- .extract_relevant_english_wt(this_page)
+        # Attempt to just get the <text> block from this page to avoid weird
+        # situations. Error if the page doesn't have a text block, though.
+        this_wt <- stringr::str_extract(
+          this_page,
+          stringr::regex("<text.+</text>", dotall = TRUE)
+        )
+        if (is.na(this_wt)) {
+          stop("No <text> at row ", i)
+        }
+
+        this_entry <- .extract_relevant_english_wt(this_wt)
         if (length(this_entry)) {
           title <- xml2::xml_text(
             xml2::xml_find_first(
@@ -271,6 +301,82 @@
       dplyr::bind_rows(word_info)
     )
   )
+}
+
+#' Generate the Lookup for All Words in Dump
+#'
+#' The wikitext dump contains information about all words on wiktionary. This
+#' function runs each of those words through process_word, generating a new
+#' lookup in the process. The lookup is then saved to disk.
+#'
+#' @inheritParams process_word
+#'
+#' @return TRUE (invisibly), via save_wikimorphemes_lookup on.exit.
+#' @keywords internal
+.create_lookup <- function(sight_words = default_sight_words()) {
+  # Don't bother doing any of this if they can't write.
+  .validate_cache_dir_write()
+
+  # As we process words, the lookup is automatically generated. We'll start with
+  # all words in the cached wikitext.
+  words <- .cache_wikitext()$word
+
+  # Get rid of sight_words and anything that has already been added to the
+  # lookup.
+  words <- words[!(words %in% sight_words)]
+  total_words <- length(words)
+
+  # Make sure the saved lookup is loaded.
+  .populate_env_lookup()
+  words <- words[!(words %in% .wikimorphemes_env$lookup$word)]
+
+  # Only show the progress bar if {progress} is installed, and don't require
+  # installation if they don't have it.
+  show_progress <- requireNamespace("progress", quietly = TRUE)
+  if (show_progress) {
+    pb <- progress::progress_bar$new(
+      format = "  processed *:current* of :total words (:percent) eta: :eta",
+      total = total_words,
+      clear = FALSE,
+      width = 60
+    )
+  }
+
+  # We want to save whatever we finish if the process stops early. This is
+  # useful so we can run this in pieces.
+  on.exit(
+    save_wikimorphemes_lookup()
+  )
+
+  for (i in seq_along(words)) {
+    if (show_progress & i %% 1000 == 0) {
+      pb$tick(1000)
+    }
+    process_word(
+      word = words[[i]],
+      sight_words = sight_words,
+      use_lookup = TRUE
+    )
+  }
+}
+
+#' Download the Latest Dump and Create Lookup
+#'
+#' This function wraps \code{\link{.create_wikitext_en}} and
+#' \code{\link{.create_lookup}} to download the latest wiktionary dump and
+#' process it into a lookup.
+#'
+#' @inheritParams .create_lookup
+#'
+#' @return A logical scalar (invisibly) indicating whether the data was updated.
+#' @keywords internal
+.create_cache_files <- function(sight_words = default_sight_words()) {
+  if (.create_wikitext_en()) {
+    .create_lookup(sight_words = sight_words)
+    return(invisible(TRUE))
+  } else {
+    return(invisible(FALSE))
+  }
 }
 
 # nocov end

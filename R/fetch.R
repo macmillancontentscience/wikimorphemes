@@ -341,9 +341,11 @@
 #' @keywords internal
 .check_inflection_ending <- function(original_word, base_word, inflection) {
   # the inflectional ending generally has a hyphen at the beginning
-  clean_inflection <- stringr::str_replace_all(inflection,
-                                               pattern = "\\-",
-                                               replacement = "")
+  clean_inflection <- stringr::str_replace_all(
+    inflection,
+    pattern = "\\-",
+    replacement = ""
+  )
   if (stringr::str_ends(original_word, clean_inflection)) {
     # be explicitly lazy, since the vast majority of cases will pass this check
     return(TRUE)
@@ -358,9 +360,12 @@
   # Insert the "s" at every position (except the end) to see if we can recover
   # the original word that way.
   inserted_match <- purrr::map_lgl(1:nchar(base_word), function(i) {
-    inserted <- stringi::stri_sub_replace(base_word,
-                                          from = i, length = 0,
-                                          value = "s")
+    inserted <- stringi::stri_sub_replace(
+      base_word,
+      from = i,
+      length = 0,
+      value = "s"
+    )
     inserted == original_word
   })
   return(any(inserted_match))

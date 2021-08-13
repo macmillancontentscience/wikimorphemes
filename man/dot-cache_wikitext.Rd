@@ -4,10 +4,7 @@
 \alias{.cache_wikitext}
 \title{Return a Cached wikitext_en}
 \usage{
-.cache_wikitext(cache_dir = wikimorphemes_cache_dir())
-}
-\arguments{
-\item{cache_dir}{Character scalar; a path to a cache directory.}
+.cache_wikitext()
 }
 \value{
 A wikitext_en tibble.
