@@ -17,6 +17,6 @@ latest dump.
 }
 \details{
 This function requires a lot of RAM and is very slow. It took about 4 hrs to
-complete on a machine with 64GB or RAM.
+complete on a machine with 64GB of RAM.
 }
 \keyword{internal}
