@@ -4,12 +4,7 @@
 \alias{process_word}
 \title{Split a Word into Pieces}
 \usage{
-process_word(
-  word,
-  sight_words = fry_sight_words,
-  use_lookup = TRUE,
-  cache_dir = wikimorphemes_cache_dir()
-)
+process_word(word, sight_words = default_sight_words(), use_lookup = TRUE)
 }
 \arguments{
 \item{word}{Character; a word to process.}
@@ -24,8 +19,6 @@ available in the lookup, processing (and likely a call to the Wiktionary
 API) will still occur. You might want to set this value to FALSE if you've
 made recent edits to Wiktionary or otherwise want to see if something has
 changed recently.}
-
-\item{cache_dir}{Character scalar; a path to a cache directory.}
 }
 \value{
 Character; the word split into pieces.

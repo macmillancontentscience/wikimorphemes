@@ -4,10 +4,7 @@
 \alias{save_wikimorphemes_lookup}
 \title{Save the Lookup Cache to Disk}
 \usage{
-save_wikimorphemes_lookup(cache_dir = wikimorphemes_cache_dir())
-}
-\arguments{
-\item{cache_dir}{Character scalar; a path to a cache directory.}
+save_wikimorphemes_lookup()
 }
 \value{
 TRUE, invisibly.

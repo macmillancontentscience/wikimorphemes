@@ -14,17 +14,15 @@
 #' @return Character; the word split into pieces.
 #' @export
 process_word <- function(word,
-                         sight_words = fry_sight_words,
-                         use_lookup = TRUE,
-                         cache_dir = wikimorphemes_cache_dir()) {
+                         sight_words = default_sight_words(),
+                         use_lookup = TRUE) {
   return(
     # We have this unexported function purely to hide the depth stuff from the
     # end user.
     .process_word_recursive(
       word = word,
       sight_words = sight_words,
-      use_lookup = use_lookup,
-      cache_dir = cache_dir
+      use_lookup = use_lookup
     )
   )
 }
@@ -40,7 +38,6 @@ process_word <- function(word,
 #' to the actual form of the ending) and morphemes (typically denoted in
 #' Wiktionary by etymology templates).
 #'
-#' @inheritParams .cache_lookup
 #' @param word Character; a word to process.
 #' @param sight_words Character vector; words to *not* break down further.
 #'   Defaults to the included `sight_words` list; to include no sight words,
@@ -57,16 +54,10 @@ process_word <- function(word,
 #' @return Character; the word split into pieces.
 #' @keywords internal
 .process_word_recursive <- function(word,
-                                    sight_words = fry_sight_words,
+                                    sight_words = default_sight_words(),
                                     use_lookup = TRUE,
-                                    cache_dir = wikimorphemes_cache_dir(),
                                     current_depth = 1,
                                     max_depth = 30) {
-  # Validate the cache_dir. Various things might use it even if they tell us not
-  # to use the lookup (ie, in the rare instance that they have the full wikitext
-  # cache), so let's make sure it's valid and the option knows about it.
-  cache_dir <- wikimorphemes_cache_dir(cache_dir)
-
   # If we return the original word, we want it to be a main piece, ie
   # .baseword_name, unless it already has a different name.
   names(word) <- names(word) %||% .baseword_name
@@ -92,7 +83,7 @@ process_word <- function(word,
 
   # See if we can use the lookup table.
   if (use_lookup) {
-    morphemes <- .pull_from_lookup(word, cache_dir)
+    morphemes <- .pull_from_lookup(word)
     if (length(morphemes)) {
       return(morphemes)
     }
@@ -108,6 +99,10 @@ process_word <- function(word,
     return(.update_env_lookup(word, word, use_lookup))
   }
 
+  # 40 words have 2 wikitext entries. For now just deal with those, we'll fix
+  # that in the processor.
+  english_content <- english_content[[1]]
+
   # First check for inflections.
   inf_break <- .split_inflections(english_content, word)
   if (length(inf_break) == 2) {
@@ -117,7 +112,6 @@ process_word <- function(word,
         word = inf_break[1],
         sight_words = sight_words,
         use_lookup = use_lookup,
-        cache_dir = cache_dir,
         current_depth = current_depth + 1,
         max_depth = max_depth
       ),
@@ -134,7 +128,6 @@ process_word <- function(word,
       .process_word_recursive,
       sight_words = sight_words,
       use_lookup = use_lookup,
-      cache_dir = cache_dir,
       current_depth = current_depth + 1,
       max_depth = max_depth
     )
@@ -186,15 +179,12 @@ process_word <- function(word,
   candidate_breakdowns <- vector(mode = "list")
   for (patt in names(patterns_endings)) {
     ending <- patterns_endings[[patt]]
-    clean_ending <- stringr::str_replace_all(ending,
-                                             pattern = "\\-",
-                                             replacement = "")
     base_word <- stringr::str_match(english_content, patt)[[2]]
     if (!is.na(base_word)) {
       if (.check_reconstructed_word(word, base_word, ending) &
-          .check_nonexplosive_word(word, base_word, ending) &
-          # word should actually end with ending. No "ridden" -> "ride -ed"!
-          .check_inflection_ending(word, base_word, ending)) {
+        .check_nonexplosive_word(word, base_word, ending) &
+        # word should actually end with ending. No "ridden" -> "ride -ed"!
+        .check_inflection_ending(word, base_word, ending)) {
         breakdown <- c(base_word, ending)
         names(breakdown) <- c(.baseword_name, .inflection_name)
         candidate_breakdowns[[length(candidate_breakdowns) + 1]] <- breakdown
@@ -205,10 +195,10 @@ process_word <- function(word,
     return(word)
   }
   unique_breakdowns <- unique(candidate_breakdowns)
-  if (length(unique_breakdowns) > 1) {
-    # https://github.com/jonthegeek/wikimorphemes/issues/14
-    warning("more than one unique breakdown found for: ", word) # nocov
-  }
+  # if (length(unique_breakdowns) > 1) {
+  #   # https://github.com/jonthegeek/wikimorphemes/issues/14
+  #   warning("more than one unique breakdown found for: ", word) # nocov
+  # }
   return(unique_breakdowns[[1]])
 }
 
@@ -251,10 +241,10 @@ process_word <- function(word,
     return(word)
   }
   unique_breakdowns <- unique(candidate_breakdowns)
-  if (length(unique_breakdowns) > 1) {
-    # https://github.com/jonthegeek/wikimorphemes/issues/14
-    warning("more than one unique breakdown found for: ", word) # nocov
-  }
+  # if (length(unique_breakdowns) > 1) {
+  #   # https://github.com/jonthegeek/wikimorphemes/issues/14
+  #   warning("more than one unique breakdown found for: ", word) # nocov
+  # }
   return(.clean_output(unique_breakdowns[[1]]))
 }
 

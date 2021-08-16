@@ -4,12 +4,10 @@
 \alias{.pull_from_lookup}
 \title{Pull a Word from the Lookup}
 \usage{
-.pull_from_lookup(word, cache_dir)
+.pull_from_lookup(word)
 }
 \arguments{
 \item{word}{Character; a word to process.}
-
-\item{cache_dir}{Character scalar; a path to a cache directory.}
 }
 \value{
 A character vector of morphemes, or a length-0 character vector if no

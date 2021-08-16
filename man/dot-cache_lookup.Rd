@@ -4,10 +4,7 @@
 \alias{.cache_lookup}
 \title{Return a Cached Lookup Table}
 \usage{
-.cache_lookup(cache_dir = wikimorphemes_cache_dir())
-}
-\arguments{
-\item{cache_dir}{Character scalar; a path to a cache directory.}
+.cache_lookup()
 }
 \value{
 A tibble with columns word, morphemes (a list column of the breakdown

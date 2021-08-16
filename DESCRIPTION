@@ -1,6 +1,6 @@
 Package: wikimorphemes
 Title: Extracting Morphemes from Wiktionary Entries
-Version: 0.0.0.9007
+Version: 0.0.0.9008
 Authors@R: c(
     person("Jonathan", "Bratt", email = "jonathan.bratt@macmillan.com", 
            role = c("aut"),
@@ -23,13 +23,13 @@ RoxygenNote: 7.1.1
 URL: https://github.com/jonthegeek/wikimorphemes
 BugReports: https://github.com/jonthegeek/wikimorphemes/issues
 Imports: 
+    dlr (>= 0.0.0.9003),
     dplyr (>= 1.0.4),
     fs (>= 1.5.0),
     lubridate,
     magrittr (>= 1.5),
     memoise (>= 1.1.0),
     purrr (>= 0.3.4),
-    rappdirs (>= 0.3.3),
     rlang (>= 0.4.10),
     stringdist (>= 0.9.6.3),
     stringi (>= 1.6.2),
@@ -41,7 +41,10 @@ Imports:
 Suggests: 
     testthat,
     knitr,
-    rmarkdown
+    rmarkdown,
+    progress
 Depends: 
     R (>= 2.10)
 VignetteBuilder: knitr
+Remotes:  
+    macmillancontentscience/dlr

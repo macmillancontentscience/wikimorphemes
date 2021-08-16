@@ -4,17 +4,12 @@
 \alias{download_wikimorphemes_lookup}
 \title{Download a Wikimorphemes Lookup Table}
 \usage{
-download_wikimorphemes_lookup(
-  lookup_style = "full",
-  cache_dir = wikimorphemes_cache_dir()
-)
+download_wikimorphemes_lookup(lookup_style = "full")
 }
 \arguments{
 \item{lookup_style}{Character; currently the only available size is "full",
-which is a 15MB rds file. I added this parameter to call out the size, and
-to soon have options with smaller lookups.}
-
-\item{cache_dir}{Character scalar; a path to a cache directory.}
+which is a 10.7MB rds file. I added this parameter to call out the size,
+and to soon have options with smaller lookups.}
 }
 \value{
 TRUE (invisibly) on success.
