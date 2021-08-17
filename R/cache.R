@@ -14,7 +14,10 @@
 
 #' Return a Cached wikitext_en
 #'
-#' @return A wikitext_en tibble.
+#' @return A wikitext_en tibble. Note that this tibble is copyright the
+#'   Wikimedia Foundation, Inc, with a creative commons BY-SA license. See
+#'   \url{https://foundation.wikimedia.org/wiki/Terms_of_Use/en} for more
+#'   details.
 #' @keywords internal
 .cache_wikitext <- function() {
   cache_dir <- getOption("wikimorphemes.dir")

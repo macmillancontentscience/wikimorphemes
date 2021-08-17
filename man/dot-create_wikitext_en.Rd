@@ -18,5 +18,9 @@ latest dump.
 \details{
 This function requires a lot of RAM and is very slow. It took about 4 hrs to
 complete on a machine with 64GB of RAM.
+
+Note that the data generated in this process is copyright the Wikimedia
+Foundation, Inc, with a creative commons BY-SA license. See
+\url{https://foundation.wikimedia.org/wiki/Terms_of_Use/en} for more details.
 }
 \keyword{internal}

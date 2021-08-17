@@ -7,7 +7,10 @@
 .cache_wikitext()
 }
 \value{
-A wikitext_en tibble.
+A wikitext_en tibble. Note that this tibble is copyright the
+Wikimedia Foundation, Inc, with a creative commons BY-SA license. See
+\url{https://foundation.wikimedia.org/wiki/Terms_of_Use/en} for more
+details.
 }
 \description{
 Return a Cached wikitext_en

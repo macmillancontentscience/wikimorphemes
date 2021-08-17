@@ -13,9 +13,7 @@ Authors@R: c(
            email = "jonathan.bratt@macmillan.com",
            comment = c(ORCID = "0000-0003-2859-0076")),
     person(given = "Bedford Freeman & Worth Pub Grp LLC DBA Macmillan Learning", 
-           role = c("cph"), comment = "R package"),
-    person(given = "Wikimedia Foundation, Inc.", 
-           role = c("cph"), comment = "raw Wiktionary text")
+           role = c("cph"))
     )
 Description: Morphemes are the smallest linguistic units within words that can 
     carry meaning. Wiktionary (the free dictionary) has a wealth of human-
