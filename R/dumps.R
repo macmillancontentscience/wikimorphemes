@@ -374,6 +374,25 @@
   }
 }
 
+#' Generate the List of Wiktionary Words
+#'
+#' This is simply the unique words from \code{\link{.cache_wikitext}}, sorted.
+#'
+#' @return TRUE (invisibly) on success.
+#' @keywords internal
+.create_word_lists <- function() {
+  all_words <- sort(unique(.cache_wikitext()$word))
+  saveRDS(
+    all_words,
+    .generate_cache_write_filename("wiktionary_words")
+  )
+  writeLines(
+    all_words,
+    con = .generate_cache_write_filename("wiktionary_words", "txt")
+  )
+  return(invisible(TRUE))
+}
+
 #' Download the Latest Dump and Create Lookup
 #'
 #' This function wraps \code{\link{.create_wikitext_en}} and
@@ -387,6 +406,7 @@
 .create_cache_files <- function(sight_words = default_sight_words()) {
   if (.create_wikitext_en()) {
     .create_lookup(sight_words = sight_words)
+    .create_word_lists()
     return(invisible(TRUE))
   } else {
     return(invisible(FALSE))

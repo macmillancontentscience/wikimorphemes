@@ -54,6 +54,30 @@
   }
 }
 
+#' Load the Current Lookup
+#'
+#' During use, Wikimorphemes builds an in-memory lookup table of words and
+#' morphemes. This table is used by \code{\link{process_word}}, but it might
+#' also be useful for other uses.
+#'
+#' @return A tibble with columns word, morphemes (a list column with a character
+#'   vector of morphemes per word), and n_morphemes (an integer count of
+#'   morphemes in the morphemes column). Note that words less than 4 characters
+#'   are never broken into morphemes by this package so they do not appear in
+#'   the lookup. If you do not have a lookup, this function will return NULL.
+#' @export
+#'
+#' @examples
+#' nrow(wikimorphemes_lookup())
+#' head(wikimorphemes_lookup())
+wikimorphemes_lookup <- function() {
+  # I separated this into a separate function to separate internal,
+  # speed-optimized usage, with external, potentially print-optimized usage.
+  return( # nocov start ; This gets tested via other functions right now.
+    .cache_lookup()
+  ) # nocov end
+}
+
 #' Set a Cache Directory for Wikimorphemes
 #'
 #' By default, this package uses a cache directory chosen using
@@ -136,4 +160,26 @@ download_wikimorphemes_lookup <- function(lookup_style = "full") {
     )
   }
   # nocov end
+}
+
+#' Load the List of Words in Wiktionary
+#'
+#' Each time we process a dump from Wiktionary, we also save a separate list of
+#' Wiktionary words. If you have already downloaded the word list, it will not
+#' download again. Right now you need to manually delete the word list file to
+#' remove it from your cache. Note: this will download a 4.12 MB file if you do
+#' not already have it in your cache.
+#'
+#' @return A character vector with the unique words available in the English
+#'   Wiktionary.
+#' @export
+wiktionary_word_list <- function() {
+  filename <- dlr::download_cache(
+    url = .wordlist_url,
+    appname = "wikimorphemes",
+    filename = "wiktionary_words.rds"
+  )
+  return(
+    readRDS(filename)
+  )
 }
