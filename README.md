@@ -11,7 +11,7 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 
 The goal of wikimorphemes is to provide tools for extracting morphemes
 from Wiktionary entries. The wikimorphemes api is *not yet stable* and
-may change (most notably to provide a vectorized processor).
+may change.
 
 ## Installation
 
@@ -27,7 +27,7 @@ And the development version from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("jonthegeek/wikimorphemes")
+devtools::install_github("macmillancontentscience/wikimorphemes")
 ```
 
 ## Examples
