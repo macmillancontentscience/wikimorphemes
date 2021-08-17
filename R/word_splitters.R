@@ -1,3 +1,17 @@
+# Copyright 2021 Bedford Freeman & Worth Pub Grp LLC DBA Macmillan Learning.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # process_word ------------------------------------------------------
 
 #' Split a Word into Pieces
@@ -160,7 +174,7 @@ process_word <- function(word,
   # Wiktionary has a variety of templates for various standard endings. In some
   # cases there are multiple ways to denote word structure. Maybe later make
   # utility function to maintain these?
-  # https://github.com/jonthegeek/wikimorphemes/issues/11
+  # https://github.com/macmillancontentscience/wikimorphemes/issues/11
   patterns_endings <- c(
     # <pattern_to_detect> = <standard_ending>
     "\\{\\{plural of\\|en\\|([^}]+)\\}\\}" = "-s",
@@ -196,7 +210,7 @@ process_word <- function(word,
   }
   unique_breakdowns <- unique(candidate_breakdowns)
   # if (length(unique_breakdowns) > 1) {
-  #   # https://github.com/jonthegeek/wikimorphemes/issues/14
+  #   # https://github.com/macmillancontentscience/wikimorphemes/issues/14
   #   warning("more than one unique breakdown found for: ", word) # nocov
   # }
   return(unique_breakdowns[[1]])
@@ -242,7 +256,7 @@ process_word <- function(word,
   }
   unique_breakdowns <- unique(candidate_breakdowns)
   # if (length(unique_breakdowns) > 1) {
-  #   # https://github.com/jonthegeek/wikimorphemes/issues/14
+  #   # https://github.com/macmillancontentscience/wikimorphemes/issues/14
   #   warning("more than one unique breakdown found for: ", word) # nocov
   # }
   return(.clean_output(unique_breakdowns[[1]]))
@@ -274,13 +288,13 @@ process_word <- function(word,
   if (!is.na(match)) {
     # `breakdown` should be length-2, but template might be badly formatted.
     if (length(breakdown) != 2) {
-      #  https://github.com/jonthegeek/wikimorphemes/issues/10
+      #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
       return(character(0)) # nocov
     }
     # At this point in the process, apply standard that prefixes end in "-"
     breakdown[[1]] <- paste0(breakdown[[1]], "-")
     names(breakdown) <- c(.prefix_name, .baseword_name)
-    # standardize naming: https://github.com/jonthegeek/wikimorphemes/issues/7
+    # standardize naming: https://github.com/macmillancontentscience/wikimorphemes/issues/7
   }
 
   return(breakdown)
@@ -313,13 +327,13 @@ process_word <- function(word,
   if (!is.na(match)) {
     # `breakdown` should be length-2, but template might be badly formatted.
     if (length(breakdown) != 2) {
-      #  https://github.com/jonthegeek/wikimorphemes/issues/10
+      #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
       return(character(0)) # nocov
     }
     # At this point in the process, apply standard that suffixes begin with "-"
     breakdown[[2]] <- paste0("-", breakdown[[2]])
     names(breakdown) <- c(.baseword_name, .suffix_name)
-    # standardize naming: https://github.com/jonthegeek/wikimorphemes/issues/7
+    # standardize naming: https://github.com/macmillancontentscience/wikimorphemes/issues/7
   }
 
   return(breakdown)
@@ -350,7 +364,7 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
-  if (!is.na(match)) { #  https://github.com/jonthegeek/wikimorphemes/issues/10
+  if (!is.na(match)) { #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
     # This one is tricky. If a piece ends with "-", assign name "prefix". If
     # starts with "-", assign name "suffix". If "-" on both sides, "interfix".
     # If no "-", it's a "base_word".
@@ -393,7 +407,7 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
-  if (!is.na(match)) { #  https://github.com/jonthegeek/wikimorphemes/issues/10
+  if (!is.na(match)) { #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
     # if only two pieces, should be prefix + suffix
     if (length(breakdown) == 2) {
       # At this point in the process, apply standard that suffixes begin with
@@ -401,7 +415,7 @@ process_word <- function(word,
       breakdown[[1]] <- paste0(breakdown[[1]], "-")
       breakdown[[2]] <- paste0("-", breakdown[[2]])
       names(breakdown) <- c(.prefix_name, .suffix_name)
-      # standardize names: https://github.com/jonthegeek/wikimorphemes/issues/7
+      # standardize names: https://github.com/macmillancontentscience/wikimorphemes/issues/7
     } else if (length(breakdown) == 3) { # nocov start
       # I can't find an example that tests this. "bedewed" uses this template,
       # but gets caught by inflection splitter first.
@@ -410,7 +424,7 @@ process_word <- function(word,
       names(breakdown) <- c(.prefix_name, .baseword_name, .suffix_name)
     } else {
       return(character(0))
-      # https://github.com/jonthegeek/wikimorphemes/issues/10
+      # https://github.com/macmillancontentscience/wikimorphemes/issues/10
     } # nocov end
   }
 
@@ -443,7 +457,7 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
-  if (!is.na(match)) { #  https://github.com/jonthegeek/wikimorphemes/issues/10
+  if (!is.na(match)) { #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
     # all components should be tagged as base words
     # !!  Find a better way that doesn't involve repeated names?
     names(breakdown) <- rep(.baseword_name, length(breakdown))
@@ -493,7 +507,7 @@ process_word <- function(word,
     names(breakdown) <- rep(.baseword_name, length(breakdown))
     return(breakdown)
   }
-  #  https://github.com/jonthegeek/wikimorphemes/issues/10
+  #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
   return(character(0))
 }
 

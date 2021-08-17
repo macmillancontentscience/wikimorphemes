@@ -1,3 +1,17 @@
+# Copyright 2021 Bedford Freeman & Worth Pub Grp LLC DBA Macmillan Learning.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # For now, we aren't going to test *any* of this. I test it manually.
 
 # nocov start
@@ -11,6 +25,10 @@
 #'
 #' This function requires a lot of RAM and is very slow. It took about 4 hrs to
 #' complete on a machine with 64GB of RAM.
+#'
+#' Note that the data generated in this process is copyright the Wikimedia
+#' Foundation, Inc, with a creative commons BY-SA license. See
+#' \url{https://foundation.wikimedia.org/wiki/Terms_of_Use/en} for more details.
 #'
 #' @return A logical scalar (invisibly) indicating whether the data was updated.
 #' @keywords internal
@@ -360,6 +378,25 @@
   }
 }
 
+#' Generate the List of Wiktionary Words
+#'
+#' This is simply the unique words from \code{\link{.cache_wikitext}}, sorted.
+#'
+#' @return TRUE (invisibly) on success.
+#' @keywords internal
+.create_word_lists <- function() {
+  all_words <- sort(unique(.cache_wikitext()$word))
+  saveRDS(
+    all_words,
+    .generate_cache_write_filename("wiktionary_words")
+  )
+  writeLines(
+    all_words,
+    con = .generate_cache_write_filename("wiktionary_words", "txt")
+  )
+  return(invisible(TRUE))
+}
+
 #' Download the Latest Dump and Create Lookup
 #'
 #' This function wraps \code{\link{.create_wikitext_en}} and
@@ -373,6 +410,7 @@
 .create_cache_files <- function(sight_words = default_sight_words()) {
   if (.create_wikitext_en()) {
     .create_lookup(sight_words = sight_words)
+    .create_word_lists()
     return(invisible(TRUE))
   } else {
     return(invisible(FALSE))
