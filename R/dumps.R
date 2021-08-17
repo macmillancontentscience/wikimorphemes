@@ -71,7 +71,7 @@
 #' @return A character scalar validated path for writing.
 #' @keywords internal
 .generate_cache_write_filename <- function(filename, ext = "rds") {
-  cache_dir <- getOption("wikimorphemes.dir")
+  cache_dir <- wikimorphemes_cache_dir()
   cache_dir <- .validate_cache_dir_write()
 
   return(
@@ -88,7 +88,7 @@
 #' @return The cache_dir, if it is writable.
 #' @keywords internal
 .validate_cache_dir_write <- function() {
-  cache_dir <- getOption("wikimorphemes.dir")
+  cache_dir <- wikimorphemes_cache_dir()
   # Check that they have read/write on the cache path. I don't validate the path
   # otherwise since I export the function that does so.
   if (file.access(cache_dir, 3) != 0) {

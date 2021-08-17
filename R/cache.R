@@ -12,6 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#' Wikimorphemes Cache Directory
+#'
+#' The wikimorphemes cache directory is a platform- and user-specific path where
+#' wikimorpheme saves caches (such as a downloaded lookup). You can override the
+#' default location in a few ways:
+#' \itemize{
+#'   \item{Option: \code{wikimorphemes.dir}}{Use
+#'   \code{\link{set_wikimorphemes_cache_dir}} to set a specific cache directory
+#'   for this session}
+#'   \item{Environment: \code{WIKIMORPHEMES_CACHE_DIR}}{Set this environment
+#'   variable to specify a wikimorphemes cache directory for all sessions.}
+#'   \item{Environment: \code{R_USER_CACHE_DIR}}{Set this environment variable
+#'   to specify a cache directory root for all packages that use the caching
+#'   system.}
+#' }
+#'
+#' @return A character vector with the normalized path to the cache.
+#' @export
+#'
+#' @examples
+#' wikimorphemes_cache_dir()
+wikimorphemes_cache_dir <- function() {
+  return(dlr::app_cache_dir("wikimorphemes"))
+}
+
 #' Return a Cached wikitext_en
 #'
 #' @return A wikitext_en tibble. Note that this tibble is copyright the
@@ -20,7 +45,7 @@
 #'   details.
 #' @keywords internal
 .cache_wikitext <- function() {
-  cache_dir <- getOption("wikimorphemes.dir")
+  cache_dir <- wikimorphemes_cache_dir()
   cache_file <- fs::path(
     cache_dir,
     "wikitext_en",
@@ -42,7 +67,7 @@
 #'   morphemes entry for this row).
 #' @keywords internal
 .cache_lookup <- function() {
-  cache_dir <- getOption("wikimorphemes.dir")
+  cache_dir <- wikimorphemes_cache_dir()
   cache_file <- fs::path(
     cache_dir,
     "wikimorphemes_lookup",
@@ -83,12 +108,9 @@ wikimorphemes_lookup <- function() {
 
 #' Set a Cache Directory for Wikimorphemes
 #'
-#' By default, this package uses a cache directory chosen using
-#' /code{/link[dlr]{app_cache_dir}}. If you wish to set a different directory,
-#' call this function. This function is also called when the package loads. If
-#' you wish to always set a different cache directory, you can set the
-#' environment variable WIKIMORPHEMES_CACHE_DIR or the option wikimorphemes.dir.
-#' Note that this function sets an option when called.
+#' Use this function to override the cache path used by Wikimorphemes for the
+#' current session. Set the \code{WIKIMORPHEMES_CACHE_DIR} environment variable
+#' for a more permanent change.
 #'
 #' @param cache_dir Character scalar; a path to a cache directory.
 #'
@@ -96,31 +118,10 @@ wikimorphemes_lookup <- function() {
 #'   the user has write access and the directory does not exist.
 #' @export
 set_wikimorphemes_cache_dir <- function(cache_dir = NULL) {
-  # All of this will be handled via {dlr} in the near future. I'm doing it here
-  # as a proof of concept before largely moving it there.
   old_cache <- getOption("wikimorphemes.dir")
-  cache_env <- Sys.getenv("WIKIMORPHEMES_CACHE_DIR")
-  if (cache_env == "") cache_env <- NULL
-  cache_dir <- cache_dir %||%
-    old_cache %||%
-    cache_env %||%
-    dlr::app_cache_dir(appname = "wikimorphemes")
-  cache_dir <- normalizePath(cache_dir)
-
-  if (!file.exists(cache_dir)) {
-    dir.create(cache_dir, recursive = TRUE) # nocov
-  } else {
-    # file.access returns 0 for success because it hates clean code. The user
-    # has to have read permissions for this function.
-    if (file.access(cache_dir, 4) != 0) { # nocov start
-      rlang::abort(
-        message = paste("You do not have read access to", cache_dir),
-        class = "dir_read_error"
-      )
-    } # nocov end
-  }
-
-  options(wikimorphemes.dir = cache_dir)
+  cache_dir <- dlr::set_app_cache_dir(
+    appname = "wikimorphemes", cache_dir = cache_dir
+  )
 
   # If it changed, we need to deal with memoised things.
   if (!is.null(old_cache) && cache_dir != old_cache) {
