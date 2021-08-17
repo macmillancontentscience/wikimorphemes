@@ -14,10 +14,7 @@ A normalized path to a cache directory. The directory is created if
 the user has write access and the directory does not exist.
 }
 \description{
-By default, this package uses a cache directory chosen using
-/code{/link[dlr]{app_cache_dir}}. If you wish to set a different directory,
-call this function. This function is also called when the package loads. If
-you wish to always set a different cache directory, you can set the
-environment variable WIKIMORPHEMES_CACHE_DIR or the option wikimorphemes.dir.
-Note that this function sets an option when called.
+Use this function to override the cache path used by Wikimorphemes for the
+current session. Set the \code{WIKIMORPHEMES_CACHE_DIR} environment variable
+for a more permanent change.
 }
