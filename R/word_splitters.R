@@ -294,7 +294,8 @@ process_word <- function(word,
     # At this point in the process, apply standard that prefixes end in "-"
     breakdown[[1]] <- paste0(breakdown[[1]], "-")
     names(breakdown) <- c(.prefix_name, .baseword_name)
-    # standardize naming: https://github.com/macmillancontentscience/wikimorphemes/issues/7
+    # standardize naming:
+    # https://github.com/macmillancontentscience/wikimorphemes/issues/7
   }
 
   return(breakdown)
@@ -333,7 +334,8 @@ process_word <- function(word,
     # At this point in the process, apply standard that suffixes begin with "-"
     breakdown[[2]] <- paste0("-", breakdown[[2]])
     names(breakdown) <- c(.baseword_name, .suffix_name)
-    # standardize naming: https://github.com/macmillancontentscience/wikimorphemes/issues/7
+    # standardize naming:
+    # https://github.com/macmillancontentscience/wikimorphemes/issues/7
   }
 
   return(breakdown)
@@ -364,7 +366,8 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
-  if (!is.na(match)) { #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
+  # https://github.com/macmillancontentscience/wikimorphemes/issues/10
+  if (!is.na(match)) {
     # This one is tricky. If a piece ends with "-", assign name "prefix". If
     # starts with "-", assign name "suffix". If "-" on both sides, "interfix".
     # If no "-", it's a "base_word".
@@ -407,7 +410,8 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
-  if (!is.na(match)) { #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
+  # https://github.com/macmillancontentscience/wikimorphemes/issues/10
+  if (!is.na(match)) {
     # if only two pieces, should be prefix + suffix
     if (length(breakdown) == 2) {
       # At this point in the process, apply standard that suffixes begin with
@@ -415,7 +419,8 @@ process_word <- function(word,
       breakdown[[1]] <- paste0(breakdown[[1]], "-")
       breakdown[[2]] <- paste0("-", breakdown[[2]])
       names(breakdown) <- c(.prefix_name, .suffix_name)
-      # standardize names: https://github.com/macmillancontentscience/wikimorphemes/issues/7
+      # standardize names:
+      # https://github.com/macmillancontentscience/wikimorphemes/issues/7
     } else if (length(breakdown) == 3) { # nocov start
       # I can't find an example that tests this. "bedewed" uses this template,
       # but gets caught by inflection splitter first.
@@ -457,7 +462,8 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
-  if (!is.na(match)) { #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
+  # https://github.com/macmillancontentscience/wikimorphemes/issues/10
+  if (!is.na(match)) {
     # all components should be tagged as base words
     # !!  Find a better way that doesn't involve repeated names?
     names(breakdown) <- rep(.baseword_name, length(breakdown))

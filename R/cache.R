@@ -152,8 +152,8 @@ download_wikimorphemes_lookup <- function(lookup_style = "full") {
   # nocov start; It's easier to just test this manually from time to time.
   if (lookup_style == "full") {
     this_url <- .lookup_url
-    dlr::download_cache(
-      url = this_url,
+    dlr::maybe_cache(
+      source_path = this_url,
       appname = "wikimorphemes",
       filename = "wikimorphemes_lookup.rds"
     )
@@ -178,12 +178,11 @@ download_wikimorphemes_lookup <- function(lookup_style = "full") {
 #'   Wiktionary.
 #' @export
 wiktionary_word_list <- function() {
-  filename <- dlr::download_cache(
-    url = .wordlist_url,
-    appname = "wikimorphemes",
-    filename = "wiktionary_words.rds"
-  )
   return(
-    readRDS(filename)
+    dlr::read_or_cache(
+      source_path = .wordlist_url,
+      appname = "wikimorphemes",
+      filename = "wiktionary_words.rds"
+    )
   )
 }
