@@ -11,7 +11,8 @@
 \code{\link{.fetch_word}}).}
 }
 \value{
-The English portion of the wikitext, minus irrelevant sections.
+The English (or Translingual) portion of the wikitext, minus
+irrelevant sections.
 }
 \description{
 Pull just the English section out of a wikitext entry.

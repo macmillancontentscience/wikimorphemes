@@ -46,7 +46,8 @@
 #' @inheritParams .fetch_word
 #'
 #' @return Character; the "English" section of the word's page, in wikitext
-#'   format.
+#'   format. If there isn't an "English" section but there's a "Translingual"
+#'   section, that will be returned instead.
 #' @keywords internal
 .fetch_english_word <- function(word) {
   # Use the cache if they have it.
@@ -266,7 +267,8 @@
 #' @param wt The word's page, in wikitext format (returned by
 #'   \code{\link{.fetch_word}}).
 #'
-#' @return The English portion of the wikitext, minus irrelevant sections.
+#' @return The English (or Translingual) portion of the wikitext, minus
+#'   irrelevant sections.
 #' @keywords internal
 .extract_english_wt <- function(wt) {
   # Language sections are always depth = 2 ("==Language==")
@@ -275,6 +277,12 @@
   english_section <- unname(
     language_sections[names(language_sections) == "English"]
   )
+  # If there isn't an English section, check for translingual.
+  if (!length(english_section)) {
+    english_section <- unname(
+      language_sections[names(language_sections) == "Translingual"]
+    )
+  }
   return(english_section) # nocov end
 }
 

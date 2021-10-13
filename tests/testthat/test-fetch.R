@@ -41,3 +41,9 @@ test_that("We can pull relevant bits out of wikitext.", {
 test_that("Corner cases work.", {
   expect_false(.check_nonexplosive_word("word", "word"))
 })
+
+test_that("We can fetch translingual words.", {
+  # Note: This will fail if you have an old cache.
+  test_result <- .fetch_english_word("km")
+  expect_length(test_result, 1L)
+})
