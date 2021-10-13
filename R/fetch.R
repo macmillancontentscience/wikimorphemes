@@ -51,10 +51,10 @@
 .fetch_english_word <- function(word) {
   # Use the cache if they have it.
   if (!is.null(.cache_wikitext())) {
-    content <- .cache_wikitext() %>%
+    content <- .cache_wikitext() %>% #nocov start
       dplyr::filter(.data$word == .env$word) %>%
       dplyr::pull(.data$wikitext)
-    return(content)
+    return(content) #nocov end
   }
   message("hitting wiktionary API!") # nocov start
   all_content <- .fetch_word(word)
