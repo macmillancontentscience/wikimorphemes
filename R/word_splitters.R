@@ -333,11 +333,17 @@ process_word <- function(word,
     }
     # At this point in the process, apply standard that suffixes begin with "-"
     breakdown[[2]] <- paste0("-", breakdown[[2]])
+    # It is *possible* that a suffix has further suffix breakdowns, e.g.
+    # "-ization" -> "-ize" + "-ation"
+    # If the original word starts with a hyphen, tag it as a suffix rather than
+    # as a base word.
     names(breakdown) <- c(.baseword_name, .suffix_name)
+    if (stringr::str_starts(breakdown[[1]], "\\-")) {
+      names(breakdown) <- c(.suffix_name, .suffix_name)
+    }
     # standardize naming:
     # https://github.com/macmillancontentscience/wikimorphemes/issues/7
   }
-
   return(breakdown)
 }
 

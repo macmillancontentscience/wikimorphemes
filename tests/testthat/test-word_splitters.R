@@ -110,6 +110,12 @@ test_that("process_word works", {
     c(base_word = "pest", interfix = "-i-", suffix = "-cide", inflection = "-s")
   )
 
+  # composite suffixes get named appropriately
+  testthat::expect_identical(
+    process_word("tokenization", use_lookup = FALSE),
+    c(base_word = "token", suffix = "-ize", suffix = "-ation")
+  )
+
   testthat::expect_identical(
     process_word("neurogenic", use_lookup = FALSE),
     # Think about breakdown of "genic" into "gene ic". Genic was aready marked
