@@ -11,7 +11,8 @@
 }
 \value{
 Character; the "English" section of the word's page, in wikitext
-format.
+format. If there isn't an "English" section but there's a "Translingual"
+section, that will be returned instead.
 }
 \description{
 Fetch the English Section of a Wiktionary Word Page
