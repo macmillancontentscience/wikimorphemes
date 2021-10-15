@@ -78,7 +78,7 @@
     fs::path(
       cache_dir,
       filename,
-      ext = "rds"
+      ext = ext
     )
   )
 }
@@ -314,11 +314,29 @@
     }
   }
 
-  return(
-    dplyr::as_tibble(
-      dplyr::bind_rows(word_info)
-    )
+  wikitext_en <- dplyr::as_tibble(
+    dplyr::bind_rows(word_info)
   )
+
+  # Protect against duplicates with blank data.
+  repeats <- dplyr::filter(
+    dplyr::count(wikitext_en, .data$row_n),
+    .data$n > 1
+  )
+
+  if (nrow(repeats)) { # nocov start
+    # For the one example I saw of this, the repeat was empty wikitext. So let's
+    # just get rid of that.
+    wikitext_en <- dplyr::filter(
+      wikitext_en,
+      !(
+        .data$row_n %in% repeats$row_n &
+          .data$wikitext == ""
+      )
+    )
+  } # nocov end
+
+  return(wikitext_en)
 }
 
 #' Generate the Lookup for All Words in Dump

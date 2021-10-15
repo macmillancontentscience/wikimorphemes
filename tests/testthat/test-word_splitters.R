@@ -41,6 +41,8 @@ test_that(".split_inflections works", {
     c(base_word = "light", inflection = "-s")
   )
 
+  # This test fails with the wikitext dump cache until the new one is processed.
+  # It is known. Hiding the cache makes it pass.
   testthat::expect_identical(
     .test_fetch_then_split("running"),
     c(base_word = "run", inflection = "-ing")
@@ -213,7 +215,7 @@ test_that("Can use a lookup other than the default.", {
 
   filename <- fs::path(
     tempdir(),
-    "wikimorphemes_lookup",
+    "wikimorphemes",
     ext = "rds"
   )
 
