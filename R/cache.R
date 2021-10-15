@@ -70,7 +70,7 @@ wikimorphemes_cache_dir <- function() {
   cache_dir <- wikimorphemes_cache_dir()
   cache_file <- fs::path(
     cache_dir,
-    "wikimorphemes_lookup",
+    "wikimorphemes",
     ext = "rds"
   )
   if (file.exists(cache_file)) {
@@ -155,7 +155,7 @@ download_wikimorphemes_lookup <- function(lookup_style = "full") {
     dlr::maybe_cache(
       source_path = this_url,
       appname = "wikimorphemes",
-      filename = "wikimorphemes_lookup.rds"
+      filename = "wikimorphemes.rds"
     )
   } else {
     rlang::abort(

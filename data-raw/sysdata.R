@@ -18,8 +18,8 @@
 .suffix_name <- "suffix"
 .interfix_name <- "interfix"
 
-.lookup_url <- "https://query.data.world/s/x2bjzurhumq3tda6zqaherq6w5vngj"
-.wordlist_url <- "https://query.data.world/s/snogfl74urbzikudl6uwyuduv4fmv7"
+.lookup_url <- "https://query.data.world/s/3sqmaqor3xwtsntk42z7gobhiiemnl"
+.wordlist_url <- "https://query.data.world/s/qqn4mucdiglfwz3ishzex7s5vltj7l"
 
 # The sight word list was derived from the Fry sight words:
 # https://sightwords.com/sight-words/fry/#lists

@@ -146,7 +146,7 @@ save_wikimorphemes_lookup <- function() {
   .populate_env_lookup()
 
   # Make sure they have write permissions.
-  filename <- .generate_cache_write_filename("wikimorphemes_lookup")
+  filename <- .generate_cache_write_filename("wikimorphemes")
 
   saveRDS(
     dplyr::arrange(.wikimorphemes_env$lookup, .data$word),
