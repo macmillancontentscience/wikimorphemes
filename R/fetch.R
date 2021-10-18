@@ -59,13 +59,40 @@
   }
   message("hitting wiktionary API!") # nocov start
   all_content <- .fetch_word(word)
-  # Language sections are marked by "==<Language>==\n" headers.
+
+  if (length(all_content) == 0) {
+    # probably no page for this word
+    return(character(0))
+  }
+
+  # If there's a redirect, get that.
+  if (stringr::str_starts(all_content, stringr::fixed("#REDIRECT"))) {
+    all_content <- .fetch_redirect(all_content)
+  }
+  # It can be down to length 0 again at this point if the redirect is bad.
   if (length(all_content) == 0) {
     # probably no page for this word
     return(character(0))
   }
 
   return(.extract_relevant_english_wt(all_content)) # nocov end
+}
+
+#' Fetch the Redirect Content for a Word
+#'
+#' Some words don't technically have their own entry, but instead are a redirect
+#' to another word.
+#'
+#' @param wt Wikitext that begins with "#REDIRECT".
+#'
+#' @return The wt of the target word.
+#' @keywords internal
+.fetch_redirect <- function(wt) {
+  word <- stringr::str_match(
+    wt,
+    "#REDIRECT \\[\\[([^]]+)"
+  )[[2]]
+  return(.fetch_word(word))
 }
 
 #' Extract the Relevant English Sections of a Wikitext Entry

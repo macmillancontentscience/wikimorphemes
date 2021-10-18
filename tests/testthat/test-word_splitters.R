@@ -185,6 +185,31 @@ test_that("process_word works", {
     ),
     c(base_word = "into") # without sight words: "in" + "to"
   )
+
+  # Contractions should work.
+  testthat::expect_identical(
+    process_word(
+      "they're",
+      use_lookup = FALSE
+    ),
+    c(base_word = "they", base_word = "are")
+  )
+  testthat::expect_identical(
+    process_word(
+      "would've",
+      use_lookup = FALSE
+    ),
+    c(base_word = "would", base_word = "have")
+  )
+  testthat::expect_identical(
+    process_word(
+      "wouldn't've",
+      use_lookup = FALSE
+    ),
+    # I'd be fine with these being suffixes or separate words, but the current
+    # wiktionary entry makes it see them as suffixes.
+    c(base_word = "would", suffix = "not", suffix = "have")
+  )
 })
 
 test_that("process_word deals with fake words gracefully.", {

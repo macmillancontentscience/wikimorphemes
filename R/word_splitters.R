@@ -236,7 +236,8 @@ process_word <- function(word,
     .split_prefixes_wt(english_content),
     .split_suffixes_wt(english_content),
     .split_compounds_wt(english_content),
-    .split_confixes_wt(english_content)
+    .split_confixes_wt(english_content),
+    .split_contractions_wt(english_content)
   )
 
   # Take out empty cases. This feels too messy.
@@ -479,7 +480,39 @@ process_word <- function(word,
 }
 
 
+# .split_contractions_wt ------------------------------------------------------
 
+#' Split Contractions
+#'
+#' @param wt Character; wikitext of a word
+#'
+#' @return Character; the word split up into component words.
+#' @keywords internal
+.split_contractions_wt <- function(wt) {
+  # wt <- .fetch_english_word("'twas")
+  # wt <- .fetch_english_word("'twasn't")
+  # wt <- .fetch_english_word("they're")
+  # wt <- .fetch_english_word("wouldn't've")
+  patt <- .make_template_pattern("contraction of")
+  match <- stringr::str_match(wt, patt)[[2]]
+
+  if (!is.na(match)) {
+    breakdown <- stringr::str_match_all(
+      match,
+      pattern = "\\[\\[([^]]+)\\]\\]"
+    )[[1]][,2]
+    # take out named parameters (marked with "=")
+    breakdown <- stringr::str_subset(
+      string = breakdown,
+      pattern = "=", negate = TRUE
+    )
+    # all components should be tagged as base words
+    names(breakdown) <- rep(.baseword_name, length(breakdown))
+    return(breakdown)
+  }
+
+  return(character(0))
+}
 
 # .check_alt_spelling_wt ------------------------------------------------------
 
@@ -542,17 +575,28 @@ process_word <- function(word,
   # This also takes care of the problem of infinitely recursing on, e.g.,
   # "cyber-" due to empty string after the hyphen.
 
-  # we *don't* want to remove hyphens at this point, as they are used to
-  # indicate affixes.
+  # I'm pretty sure we just want to split on space now.
   split_more <- unlist(
     purrr::map(
       split_word,
       stringr::str_split,
-      pattern = "[^[:alpha:]\\-]"
+      pattern = "\\s+"
     ),
     use.names = TRUE
   )
-  split_more <- split_more[split_more != ""]
+
+  # we *don't* want to remove hyphens at this point, as they are used to
+  # indicate affixes.
+  # split_more <- unlist(
+  #   purrr::map(
+  #     split_word,
+  #     stringr::str_split,
+  #     pattern = "[^[:alpha:]\\-]"
+  #   ),
+  #   use.names = TRUE
+  # )
+  # # Get rid of weird things generated during the additional split.
+  split_more <- split_more[!(split_more %in% c("", "-"))]
   # we're a little naughty and use non-unique names.
   names(split_more) <- stringr::str_remove_all(names(split_more), "[0-9]")
   return(split_more)
