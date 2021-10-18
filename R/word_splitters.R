@@ -237,7 +237,8 @@ process_word <- function(word,
     .split_suffixes_wt(english_content),
     .split_compounds_wt(english_content),
     .split_confixes_wt(english_content),
-    .split_contractions_wt(english_content)
+    .split_contractions_wt(english_content),
+    .check_misspelling_wt(english_content)
   )
 
   # Take out empty cases. This feels too messy.
@@ -553,6 +554,42 @@ process_word <- function(word,
   return(character(0))
 }
 
+
+# .check_misspelling_wt ------------------------------------------------------
+
+#' Check for Misspelling
+#'
+#' Checks the wikitext to see if this is a misspelling of another word.
+#'
+#' @param wt Character; wikitext of a word
+#'
+#' @return Character; the better spelling of the word.
+#' @keywords internal
+.check_misspelling_wt <- function(wt) {
+  # wt <- .fetch_english_word("twas")
+  # wt <- .fetch_english_word("abhoring")
+  patt <- .make_template_pattern("misspelling of")
+  match <- stringr::str_match(wt, patt)[[2]]
+  # First split out the template parameters.
+  breakdown <- stringr::str_split(
+    string = match,
+    pattern = stringr::coll("|")
+  )[[1]]
+  # Take out named parameters (marked with "=").
+  breakdown <- stringr::str_subset(
+    string = breakdown,
+    pattern = "=", negate = TRUE
+  )
+
+  # Just send the alternative form through to be re-processed.
+  if (length(breakdown)) {
+    names(breakdown) <- rep(.baseword_name, length(breakdown))
+    return(breakdown)
+  }
+
+  #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
+  return(character(0))
+}
 
 
 

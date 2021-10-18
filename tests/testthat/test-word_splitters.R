@@ -210,6 +210,29 @@ test_that("process_word works", {
     # wiktionary entry makes it see them as suffixes.
     c(base_word = "would", suffix = "not", suffix = "have")
   )
+
+  # Let's also deal with misspellings that are common enough to have wiktionary
+  # pages.
+  testthat::expect_identical(
+    process_word(
+      "twas",
+      use_lookup = FALSE
+    ),
+    process_word(
+      "'twas",
+      use_lookup = FALSE
+    )
+  )
+  testthat::expect_identical(
+    process_word(
+      "mispelling",
+      use_lookup = FALSE
+    ),
+    process_word(
+      "misspelling",
+      use_lookup = FALSE
+    )
+  )
 })
 
 test_that("process_word deals with fake words gracefully.", {
