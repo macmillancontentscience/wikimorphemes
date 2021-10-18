@@ -195,6 +195,7 @@ process_word <- function(word,
     ending <- patterns_endings[[patt]]
     base_word <- stringr::str_match(english_content, patt)[[2]]
     if (!is.na(base_word)) {
+      base_word <- .clean_word_reference(base_word)
       if (.check_reconstructed_word(word, base_word, ending) &
         .check_nonexplosive_word(word, base_word, ending) &
         # word should actually end with ending. No "ridden" -> "ride -ed"!
@@ -214,6 +215,27 @@ process_word <- function(word,
   #   warning("more than one unique breakdown found for: ", word) # nocov
   # }
   return(unique_breakdowns[[1]])
+}
+
+#' Strip off Deep Links
+#'
+#' Words can link to specific sections. Any time we return a word, we really
+#' just care about the word, not the deeper link.
+#'
+#' @param word The word (extracted from a template, probably) to clean.
+#'
+#' @return Just the word.
+#' @keywords internal
+.clean_word_reference <- function(word) {
+  # I want this to be general-purpose, so let's not assume "word" is a single
+  # word. But we ARE assuming the names don't matter, if it has any, because
+  # every potential use of this is before we name things.
+  return(
+    purrr::map_chr(
+      word,
+      ~stringr::str_split(.x, "#", simplify = TRUE)[[1]]
+    )
+  )
 }
 
 
@@ -287,6 +309,7 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
+  breakdown <- .clean_word_reference(breakdown)
   if (!is.na(match)) {
     # `breakdown` should be length-2, but template might be badly formatted.
     if (length(breakdown) != 2) {
@@ -327,6 +350,7 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
+  breakdown <- .clean_word_reference(breakdown)
   if (!is.na(match)) {
     # `breakdown` should be length-2, but template might be badly formatted.
     if (length(breakdown) != 2) {
@@ -374,6 +398,7 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
+  breakdown <- .clean_word_reference(breakdown)
   # https://github.com/macmillancontentscience/wikimorphemes/issues/10
   if (!is.na(match)) {
     # This one is tricky. If a piece ends with "-", assign name "prefix". If
@@ -418,6 +443,7 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
+  breakdown <- .clean_word_reference(breakdown)
   # https://github.com/macmillancontentscience/wikimorphemes/issues/10
   if (!is.na(match)) {
     # if only two pieces, should be prefix + suffix
@@ -470,6 +496,7 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
+  breakdown <- .clean_word_reference(breakdown)
   # https://github.com/macmillancontentscience/wikimorphemes/issues/10
   if (!is.na(match)) {
     # all components should be tagged as base words
@@ -507,6 +534,7 @@ process_word <- function(word,
       string = breakdown,
       pattern = "=", negate = TRUE
     )
+    breakdown <- .clean_word_reference(breakdown)
     # all components should be tagged as base words
     names(breakdown) <- rep(.baseword_name, length(breakdown))
     return(breakdown)
@@ -534,20 +562,21 @@ process_word <- function(word,
   asp_patt <- .make_template_pattern("alternative spelling of")
   match <- stringr::str_match(wt, asp_patt)[[2]]
   # First split out the template parameters.
-  breakdown <- stringr::str_split(
+  alt_word <- stringr::str_split(
     string = match,
     pattern = stringr::coll("|")
   )[[1]]
   # Take out named parameters (marked with "=").
-  breakdown <- stringr::str_subset(
-    string = breakdown,
+  alt_word <- stringr::str_subset(
+    string = alt_word,
     pattern = "=", negate = TRUE
   )
+  alt_word <- .clean_word_reference(alt_word)
 
   # Just send the alternative form through to be re-processed.
-  if (length(breakdown)) {
-    names(breakdown) <- rep(.baseword_name, length(breakdown))
-    return(breakdown)
+  if (length(alt_word)) {
+    names(alt_word) <- rep(.baseword_name, length(alt_word))
+    return(alt_word)
   }
 
   #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
@@ -571,20 +600,21 @@ process_word <- function(word,
   patt <- .make_template_pattern("misspelling of")
   match <- stringr::str_match(wt, patt)[[2]]
   # First split out the template parameters.
-  breakdown <- stringr::str_split(
+  alt_word <- stringr::str_split(
     string = match,
     pattern = stringr::coll("|")
   )[[1]]
   # Take out named parameters (marked with "=").
-  breakdown <- stringr::str_subset(
-    string = breakdown,
+  alt_word <- stringr::str_subset(
+    string = alt_word,
     pattern = "=", negate = TRUE
   )
+  alt_word <- .clean_word_reference(alt_word)
 
   # Just send the alternative form through to be re-processed.
-  if (length(breakdown)) {
-    names(breakdown) <- rep(.baseword_name, length(breakdown))
-    return(breakdown)
+  if (length(alt_word)) {
+    names(alt_word) <- rep(.baseword_name, length(alt_word))
+    return(alt_word)
   }
 
   #  https://github.com/macmillancontentscience/wikimorphemes/issues/10

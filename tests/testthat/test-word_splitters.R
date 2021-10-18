@@ -233,6 +233,15 @@ test_that("process_word works", {
       use_lookup = FALSE
     )
   )
+
+  # Deal with deep links.
+  testthat::expect_identical(
+    process_word(
+      "lobbying",
+      use_lookup = FALSE
+    ),
+    c(base_word = "lobby", inflection = "-ing")
+  )
 })
 
 test_that("process_word deals with fake words gracefully.", {
