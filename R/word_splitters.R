@@ -135,7 +135,7 @@ process_word <- function(word,
   }
   # If we made it here, no inflections found. Check for morphemes...
   mor_break <- .split_morphemes(english_content, word)
-  if (length(mor_break) > 1) {
+  if (length(mor_break) > 1 | length(mor_break) == 1 && mor_break != word) {
     # process all pieces, including prefixes, etc.
     all_pieces <- purrr::map(
       mor_break,
@@ -495,6 +495,7 @@ process_word <- function(word,
 .check_alt_spelling_wt <- function(wt) {
   # wt <- .fetch_english_word("passerby")
   # wt <- .fetch_english_word("clearinghouse")
+  # wt <- .fetch_english_word("metaanalysis")
   # Maybe also catch "alternative form of" here?
   asp_patt <- .make_template_pattern("alternative spelling of")
   match <- stringr::str_match(wt, asp_patt)[[2]]
@@ -508,17 +509,13 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
-  # Alternative spelling is "simpler" if there's a space or hyphen.
-  # TODO Decide whether there are other cases we want to take alt. spelling.
-  if (isTRUE(stringr::str_detect(string = breakdown, pattern = "\\s|\\-"))) {
-    breakdown <- stringr::str_split(
-      string = breakdown,
-      pattern = "\\s|\\-"
-    )[[1]]
-    # all components should be tagged as base words
+
+  # Just send the alternative form through to be re-processed.
+  if (length(breakdown)) {
     names(breakdown) <- rep(.baseword_name, length(breakdown))
     return(breakdown)
   }
+
   #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
   return(character(0))
 }

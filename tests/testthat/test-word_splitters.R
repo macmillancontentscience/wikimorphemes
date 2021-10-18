@@ -142,8 +142,13 @@ test_that("process_word works", {
     c(base_word = "clear", inflection = "-ing", base_word = "house")
   )
 
+  testthat::expect_identical(
+    process_word("metaanalysis", use_lookup = FALSE),
+    process_word("meta-analysis", use_lookup = FALSE)
+  )
+
   # We now require inflected words to actually end with their inflection, but
-  # make an exception to accomodate weird plurals like "passersby"
+  # make an exception to accommodate weird plurals like "passersby"
   testthat::expect_identical(
     process_word("passersby", use_lookup = FALSE),
     c(base_word = "pass", suffix = "-er", base_word = "by", inflection = "-s")
