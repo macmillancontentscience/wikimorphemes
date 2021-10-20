@@ -550,6 +550,8 @@ process_word <- function(word,
   # word <- "wouldn't"
   # word <- "wouldn't've"
   # word <- "'dillo"
+  # word <- "wouldn't"
+  # word <- "wouldn't've"
   # wt <- .fetch_english_word(word)
 
   # Only process contractions if the word still contains an apostrophe,
