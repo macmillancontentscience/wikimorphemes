@@ -75,6 +75,17 @@ process_word <- function(word,
                                     current_depth = 1L,
                                     max_depth = 30L,
                                     stop_at = NULL) {
+  # We expect word to be scalar, and things get weird if it isn't. Fix that and
+  # warn if it isn't.
+  if (length(word) > 1) {
+    warning(
+      "More than one word passed in for processing: ",
+      paste(word, collapse = "|")
+    )
+    word <- word[[1]]
+  }
+
+
   # If we return the original word, we want it to be a main piece, ie
   # .baseword_name, unless it already has a different name.
   names(word) <- names(word) %||% .baseword_name
@@ -654,6 +665,10 @@ process_word <- function(word,
 
   if (length(alt_word)) {
     stop_at <- stop_at %||% word
+    # Conceivably it could be an alternative spelling of more than one thing.
+    # Let's just use the first one.
+    alt_word <- alt_word[[1]]
+
     breakdown <- .process_word_recursive(
       word = alt_word,
       sight_words = sight_words,
@@ -714,6 +729,10 @@ process_word <- function(word,
 
   if (length(alt_word)) {
     stop_at <- stop_at %||% word
+    # Conceivably it could be a misspelling of more than one thing.
+    # Let's just use the first one.
+    alt_word <- alt_word[[1]]
+
     breakdown <- .process_word_recursive(
       word = alt_word,
       sight_words = sight_words,
