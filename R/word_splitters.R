@@ -666,7 +666,9 @@ process_word <- function(word,
   if (length(alt_word)) {
     stop_at <- stop_at %||% word
     # Conceivably it could be an alternative spelling of more than one thing.
-    # Let's just use the first one.
+    # Let's just use the first one. It can also have parts that are descriptions
+    # of the relationship, such as this from pause: "Pause||a button that pauses
+    # or resumes something"
     alt_word <- alt_word[[1]]
 
     breakdown <- .process_word_recursive(
