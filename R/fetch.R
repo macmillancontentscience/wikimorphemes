@@ -52,10 +52,10 @@
 .fetch_english_word <- function(word) {
   # Use the cache if they have it.
   if (!is.null(.cache_wikitext())) {
-    content <- .cache_wikitext() %>% #nocov start
+    content <- .cache_wikitext() %>% # nocov start
       dplyr::filter(.data$word == .env$word) %>%
       dplyr::pull(.data$wikitext)
-    return(content) #nocov end
+    return(content) # nocov end
   }
   message("hitting wiktionary API!") # nocov start
   all_content <- .fetch_word(word)
@@ -364,13 +364,12 @@
 #'   piece.
 #' @keywords internal
 .check_nonexplosive_word <- function(original_word, ...) {
-  breakdown <- list(...)
-  # not sure whether I need to allow for a single word piece that is the
-  # original word. We can probably reject that, too.
-  if (original_word %in% breakdown) {
-    return(FALSE)
-  }
-  return(TRUE)
+  breakdown <- unlist(list(...))
+  # We previously looked at whether the original word was anywhere inside the
+  # other words, but that fails for "twas", and probably other things.
+  return(
+    !(original_word %in% breakdown)
+  )
 }
 
 
