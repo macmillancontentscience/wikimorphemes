@@ -66,25 +66,25 @@ test_that(".split_inflections works", {
   # non-splittable words come back unchanged
   testthat::expect_identical(
     .test_fetch_then_split("escape"),
-    "escape"
+    character(0)
   )
 
   # non-English words come back unchanged, too
   testthat::expect_identical(
     .test_fetch_then_split("bueno"),
-    "bueno"
+    character(0)
   )
 
   # irregular words come back unchanged
   testthat::expect_identical(
     .test_fetch_then_split("ground"),
-    "ground"
+    character(0)
   )
 
   # unclassified irregulars are caught by stringdist check.
   testthat::expect_identical(
     .test_fetch_then_split("best"),
-    "best"
+    character(0)
   )
 })
 
@@ -147,6 +147,21 @@ test_that("process_word works", {
     process_word("meta-analysis", use_lookup = FALSE)
   )
 
+  testthat::expect_identical(
+    process_word("auroch", use_lookup = FALSE),
+    c(base_word = "auroch")
+  )
+
+  testthat::expect_identical(
+    process_word("aurochs", use_lookup = FALSE),
+    c(base_word = "auroch", inflection = "-s")
+  )
+
+  testthat::expect_identical(
+    process_word("Labor", use_lookup = FALSE),
+    c(base_word = "Labor")
+  )
+
   # We now require inflected words to actually end with their inflection, but
   # make an exception to accommodate weird plurals like "passersby"
   testthat::expect_identical(
@@ -206,23 +221,18 @@ test_that("process_word works", {
       "wouldn't've",
       use_lookup = FALSE
     ),
-    # I'd be fine with these being suffixes or separate words, but the current
-    # wiktionary entry makes it see them as suffixes.
-    c(base_word = "would", suffix = "not", suffix = "have")
+    c(base_word = "would", base_word = "not", base_word = "have")
+  )
+  testthat::expect_identical(
+    process_word(
+      "'dillo",
+      use_lookup = FALSE
+    ),
+    c(base_word = "armadillo")
   )
 
   # Let's also deal with misspellings that are common enough to have wiktionary
   # pages.
-  testthat::expect_identical(
-    process_word(
-      "twas",
-      use_lookup = FALSE
-    ),
-    process_word(
-      "'twas",
-      use_lookup = FALSE
-    )
-  )
   testthat::expect_identical(
     process_word(
       "mispelling",
@@ -233,6 +243,13 @@ test_that("process_word works", {
       use_lookup = FALSE
     )
   )
+  testthat::expect_identical(
+    process_word(
+      "'twas",
+      use_lookup = FALSE
+    ),
+    c(base_word = "it", base_word = "was")
+  )
 
   # Deal with deep links.
   testthat::expect_identical(
@@ -241,6 +258,24 @@ test_that("process_word works", {
       use_lookup = FALSE
     ),
     c(base_word = "lobby", inflection = "-ing")
+  )
+
+  # Don't follow a bad rabbit trail for some words.
+  testthat::expect_identical(
+    process_word(
+      "prejudice",
+      use_lookup = FALSE
+    ),
+    c(base_word = "prejudice")
+  )
+
+  # Also test some other corner cases.
+  testthat::expect_identical(
+    process_word(
+      "-'ve",
+      use_lookup = FALSE
+    ),
+    c(base_word = "have")
   )
 })
 
