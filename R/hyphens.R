@@ -32,3 +32,33 @@ remove_hyphens <- function(processed_word) {
   names(processed_word_2) <- names(processed_word)
   return(processed_word_2)
 }
+
+#' Correct Hyphens in Processed Words
+#'
+#' Sometimes we gain or lose hyphens in various processes. Standardize them.
+#'
+#' @param processed_word Character vector; the breakdown of the word.
+#'
+#' @return The processed words with proper hyphens.
+#' @keywords internal
+.fix_hyphens <- function(processed_word) {
+  processed_word[names(processed_word) == .prefix_name] <- paste0(
+    processed_word[names(processed_word) == .prefix_name], "-"
+  )
+  processed_word[names(processed_word) == .suffix_name] <- paste0(
+    "-", processed_word[names(processed_word) == .suffix_name]
+  )
+  processed_word[names(processed_word) == .interfix_name] <- paste0(
+    "-", processed_word[names(processed_word) == .interfix_name], "-"
+  )
+  processed_word[names(processed_word) == .inflection_name] <- paste0(
+    "-", processed_word[names(processed_word) == .inflection_name]
+  )
+
+  return(
+    rlang::set_names(
+      stringr::str_replace_all(processed_word, "--", "-"),
+      names(processed_word)
+    )
+  )
+}

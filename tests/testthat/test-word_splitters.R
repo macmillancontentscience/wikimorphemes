@@ -63,19 +63,19 @@ test_that(".split_inflections works", {
     c(base_word = "escape", inflection = "-ing")
   )
 
-  # non-splittable words come back unchanged
+  # non-splittable words come back as character(0)
   testthat::expect_identical(
     .test_fetch_then_split("escape"),
     character(0)
   )
 
-  # non-English words come back unchanged, too
+  # non-English words come back as character(0), too
   testthat::expect_identical(
     .test_fetch_then_split("bueno"),
     character(0)
   )
 
-  # irregular words come back unchanged
+  # irregular words come back as character(0)
   testthat::expect_identical(
     .test_fetch_then_split("ground"),
     character(0)
@@ -277,6 +277,35 @@ test_that("process_word works", {
     ),
     c(base_word = "have")
   )
+
+  testthat::expect_identical(
+    process_word(
+      "butchers'",
+      use_lookup = FALSE
+    ),
+    c(base_word = "butcher", inflection = "-s", suffix = "-'s")
+  )
+  testthat::expect_identical(
+    process_word(
+      "butcher's",
+      use_lookup = FALSE
+    ),
+    c(base_word = "butcher", suffix = "-'s")
+  )
+  testthat::expect_identical(
+    process_word(
+      "Addis Ababa",
+      use_lookup = FALSE
+    ),
+    c(base_word = "Addis", base_word = "Ababa")
+  )
+  testthat::expect_identical(
+    process_word(
+      "a-flat",
+      use_lookup = FALSE
+    ),
+    c(base_word = "A", base_word = "flat")
+  )
 })
 
 test_that("process_word deals with fake words gracefully.", {
@@ -285,6 +314,25 @@ test_that("process_word deals with fake words gracefully.", {
   expect_identical(test_result, rlang::set_names(word, "base_word"))
   test_result <- process_word(word, use_lookup = TRUE)
   expect_identical(test_result, rlang::set_names(word, "base_word"))
+})
+
+test_that("process_word and its children deal with weird cases.", {
+  # I can't find a case where this actually happens, but I wanted to protect
+  # against it.
+  expect_identical(
+    .split_on_breaks(c(suffix = "-this-that-")),
+    c(
+      suffix = "-this",
+      suffix = "that-"
+    )
+  )
+})
+
+test_that("process_word gives warnings for weird cases.", {
+  expect_warning(
+    process_word(c("two", "words")),
+    "More than one word"
+  )
 })
 
 test_that("Can use a lookup other than the default.", {

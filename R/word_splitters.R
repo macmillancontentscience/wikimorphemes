@@ -85,7 +85,6 @@ process_word <- function(word,
     word <- word[[1]]
   }
 
-
   # If we return the original word, we want it to be a main piece, ie
   # .baseword_name, unless it already has a different name.
   names(word) <- names(word) %||% .baseword_name
@@ -126,45 +125,61 @@ process_word <- function(word,
   # times.
   english_content <- .fetch_english_word(word)
 
-  # If there's no wikitext, return the word unbroken.
+  # If there's no wikitext, it's not a known English word. But consider breaking
+  # it!
   if (!length(english_content)) {
-    # not a known English word
-    return(.update_env_lookup(word, word, use_lookup))
-  }
+    breakdown <- .split_possessive(word)
+    if (!length(breakdown)) {
+      breakdown <- .split_on_breaks(word)
+    }
+    if (!length(breakdown)) {
+      # There's nothing to do with this word.
+      return(.update_env_lookup(word, word, use_lookup))
+    }
+  } else {
+    # 40 words have 2 wikitext entries. For now just deal with those, we'll fix
+    # that in the processor.
+    english_content <- english_content[[1]]
 
-  # 40 words have 2 wikitext entries. For now just deal with those, we'll fix
-  # that in the processor.
-  english_content <- english_content[[1]]
-
-  # Check things one at a time, if the one before didn't find anything.
-  breakdown <- .split_contractions(english_content, word)
-  if (!length(breakdown)) {
-    breakdown <- .split_inflections(english_content, word)
-  }
-  if (!length(breakdown)) {
-    breakdown <- .split_morphemes(english_content, word)
-  }
-  if (!length(breakdown)) {
-    breakdown <- .check_alt_spelling(
-      wt = english_content,
-      word = word,
-      sight_words = sight_words,
-      use_lookup = use_lookup,
-      current_depth = current_depth,
-      max_depth = max_depth,
-      stop_at = stop_at
-    )
-  }
-  if (!length(breakdown)) {
-    breakdown <- .check_misspelling(
-      wt = english_content,
-      word = word,
-      sight_words = sight_words,
-      use_lookup = use_lookup,
-      current_depth = current_depth,
-      max_depth = max_depth,
-      stop_at = stop_at
-    )
+    # Check things one at a time, if the one before didn't find anything.
+    breakdown <- .split_contractions(english_content, word)
+    if (!length(breakdown)) {
+      breakdown <- .split_inflections(english_content, word)
+    }
+    if (!length(breakdown)) {
+      breakdown <- .split_morphemes(english_content, word)
+    }
+    if (!length(breakdown)) {
+      breakdown <- .check_alt_spelling(
+        wt = english_content,
+        word = word,
+        sight_words = sight_words,
+        use_lookup = use_lookup,
+        current_depth = current_depth,
+        max_depth = max_depth,
+        stop_at = stop_at
+      )
+    }
+    if (!length(breakdown)) {
+      breakdown <- .check_misspelling(
+        wt = english_content,
+        word = word,
+        sight_words = sight_words,
+        use_lookup = use_lookup,
+        current_depth = current_depth,
+        max_depth = max_depth,
+        stop_at = stop_at
+      )
+    }
+    if (!length(breakdown)) {
+      breakdown <- .split_possessive(
+        word = word
+      )
+    }
+    # If we don't find anything formal, split on split characters.
+    if (!length(breakdown)) {
+      breakdown <- .split_on_breaks(word)
+    }
   }
 
   if (!is.null(stop_at) && stop_at %in% breakdown) {
@@ -185,6 +200,8 @@ process_word <- function(word,
     )
 
     processed_word <- .correct_names(all_pieces)
+    processed_word <- .fix_hyphens(processed_word)
+
     return(.update_env_lookup(word, processed_word, use_lookup))
   } else {
     return(.update_env_lookup(word, word, use_lookup))
@@ -758,6 +775,68 @@ process_word <- function(word,
 
 
 
+#' Split the Possessive s
+#'
+#' This is probably not exhaustive, and could potentially have some false
+#' positives, but it should only happen when templates fail us so I think it
+#' will usually be correct.
+#'
+#' @param word The word to split.
+#'
+#' @return The word, split into word + -'s if it is possessive.
+#' @keywords internal
+.split_possessive <- function(word) {
+  if (
+    stringr::str_detect(word, "^[^']+'s$") ||
+    stringr::str_detect(word, "^[^']+[sx]'$")
+  ) {
+    breakdown <- stringr::str_split(
+      word,
+      "'"
+    )[[1]][[1]]
+    breakdown <- c(
+      breakdown,
+      "-'s"
+    )
+    # I'm calling this a suffix but it's really a particle, I think?
+    names(breakdown) <- c(names(word), "suffix")
+    return(breakdown)
+  }
+  return(character(0))
+}
+
+#' Split on Break Characters
+#'
+#' This is a fall-through if nothing else breaks the word down.
+#'
+#' @param word The word to potentially break down.
+#'
+#' @return The breakdown, if there are break characters.
+#' @keywords internal
+.split_on_breaks <- function(word) {
+  # This is more complicated than it appears, because we want to keep "-" at the
+  # beginning or end of the word.
+  if (stringr::str_detect(word, "[^ -][ -][^ -]")) {
+    breakdown <- stringr::str_split(
+      word,
+      "[ -]"
+    )
+    breakdown <- .clean_output(breakdown)
+    if (stringr::str_starts(word, "-")) {
+      breakdown[[1]] <- paste0("-", breakdown[[1]])
+    }
+    if (stringr::str_ends(word, "-")) {
+      breakdown[[length(breakdown)]] <- paste0(
+        breakdown[[length(breakdown)]],
+        "-"
+      )
+    }
+    names(breakdown) <- rep(names(word), length(breakdown))
+    return(breakdown)
+  }
+  return(character(0))
+}
+
 # .clean_output ------------------------------------------------------
 
 #' Clean word-splitter output
@@ -799,6 +878,7 @@ process_word <- function(word,
   # )
   # # Get rid of weird things generated during the additional split.
   split_more <- split_more[!(split_more %in% c("", "-"))]
+
   # we're a little naughty and use non-unique names.
   names(split_more) <- stringr::str_remove_all(names(split_more), "[0-9]")
   return(split_more)
