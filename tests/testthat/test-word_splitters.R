@@ -328,6 +328,34 @@ test_that("process_word and its children deal with weird cases.", {
   )
 })
 
+test_that("Template abuse doesn't kill us.", {
+  testthat::expect_identical(
+    .split_prefixes_wt("===Etymology===\n{{prefix|en|hemi|demi|semi|quaver}}"),
+    c(
+      prefix = "hemi-",
+      prefix = "demi-",
+      prefix = "semi-",
+      base_word = "quaver"
+    )
+  )
+  testthat::expect_identical(
+    .split_prefixes_wt("===Etymology===\n{{prefix|en|hemi|demi|semi-}}"),
+    c(
+      prefix = "hemi-",
+      prefix = "demi-",
+      prefix = "semi-"
+    )
+  )
+  testthat::expect_identical(
+    .split_suffixes_wt("===Etymology===\n{{suffix|en|quave|er|est}}"),
+    c(
+      base_word = "quave",
+      suffix = "-er",
+      suffix = "-est"
+    )
+  )
+})
+
 test_that("process_word gives warnings for weird cases.", {
   expect_warning(
     process_word(c("two", "words")),

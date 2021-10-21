@@ -363,20 +363,21 @@ process_word <- function(word,
     pattern = "=", negate = TRUE
   )
   breakdown <- .clean_word_reference(breakdown)
-  if (!is.na(match)) {
+  if (!is.na(match) && length(breakdown) > 1) {
     # `breakdown` should be length-2, but template might be badly formatted.
-    if (length(breakdown) != 2) {
-      #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
-      return(character(0)) # nocov
+    names(breakdown) <- c(
+      rep(.prefix_name, (length(breakdown) - 1)),
+      .baseword_name
+    )
+    if (stringr::str_ends(breakdown[[length(breakdown)]], "\\-")) {
+      names(breakdown)[[length(breakdown)]] <- .prefix_name
     }
-    # At this point in the process, apply standard that prefixes end in "-"
-    breakdown[[1]] <- paste0(breakdown[[1]], "-")
-    names(breakdown) <- c(.prefix_name, .baseword_name)
-    # standardize naming:
-    # https://github.com/macmillancontentscience/wikimorphemes/issues/7
+
+    breakdown <- .fix_hyphens(breakdown)
+    return(breakdown)
   }
 
-  return(breakdown)
+  return(character(0))
 }
 
 
@@ -404,26 +405,20 @@ process_word <- function(word,
     pattern = "=", negate = TRUE
   )
   breakdown <- .clean_word_reference(breakdown)
-  if (!is.na(match)) {
+  if (!is.na(match) && length(breakdown)) {
     # `breakdown` should be length-2, but template might be badly formatted.
-    if (length(breakdown) != 2) {
-      #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
-      return(character(0)) # nocov
-    }
-    # At this point in the process, apply standard that suffixes begin with "-"
-    breakdown[[2]] <- paste0("-", breakdown[[2]])
-    # It is *possible* that a suffix has further suffix breakdowns, e.g.
-    # "-ization" -> "-ize" + "-ation"
-    # If the original word starts with a hyphen, tag it as a suffix rather than
-    # as a base word.
-    names(breakdown) <- c(.baseword_name, .suffix_name)
+    names(breakdown) <- c(
+      .baseword_name,
+      rep(.suffix_name, (length(breakdown) - 1))
+    )
     if (stringr::str_starts(breakdown[[1]], "\\-")) {
-      names(breakdown) <- c(.suffix_name, .suffix_name)
+      names(breakdown)[[1]] <- .suffix_name
     }
-    # standardize naming:
-    # https://github.com/macmillancontentscience/wikimorphemes/issues/7
+    breakdown <- .fix_hyphens(breakdown)
+    return(breakdown)
   }
-  return(breakdown)
+
+  return(character(0))
 }
 
 
