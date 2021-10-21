@@ -52,20 +52,47 @@
 .fetch_english_word <- function(word) {
   # Use the cache if they have it.
   if (!is.null(.cache_wikitext())) {
-    content <- .cache_wikitext() %>% #nocov start
+    content <- .cache_wikitext() %>% # nocov start
       dplyr::filter(.data$word == .env$word) %>%
       dplyr::pull(.data$wikitext)
-    return(content) #nocov end
+    return(content) # nocov end
   }
   message("hitting wiktionary API!") # nocov start
   all_content <- .fetch_word(word)
-  # Language sections are marked by "==<Language>==\n" headers.
+
+  if (length(all_content) == 0) {
+    # probably no page for this word
+    return(character(0))
+  }
+
+  # If there's a redirect, get that.
+  if (stringr::str_starts(all_content, stringr::fixed("#REDIRECT"))) {
+    all_content <- .fetch_redirect(all_content)
+  }
+  # It can be down to length 0 again at this point if the redirect is bad.
   if (length(all_content) == 0) {
     # probably no page for this word
     return(character(0))
   }
 
   return(.extract_relevant_english_wt(all_content)) # nocov end
+}
+
+#' Fetch the Redirect Content for a Word
+#'
+#' Some words don't technically have their own entry, but instead are a redirect
+#' to another word.
+#'
+#' @param wt Wikitext that begins with "#REDIRECT".
+#'
+#' @return The wt of the target word.
+#' @keywords internal
+.fetch_redirect <- function(wt) {
+  word <- stringr::str_match(
+    wt,
+    "#REDIRECT \\[\\[([^]]+)"
+  )[[2]]
+  return(.fetch_word(word))
 }
 
 #' Extract the Relevant English Sections of a Wikitext Entry
@@ -337,13 +364,12 @@
 #'   piece.
 #' @keywords internal
 .check_nonexplosive_word <- function(original_word, ...) {
-  breakdown <- list(...)
-  # not sure whether I need to allow for a single word piece that is the
-  # original word. We can probably reject that, too.
-  if (original_word %in% breakdown) {
-    return(FALSE)
-  }
-  return(TRUE)
+  breakdown <- unlist(list(...))
+  # We previously looked at whether the original word was anywhere inside the
+  # other words, but that fails for "twas", and probably other things.
+  return(
+    !(original_word %in% breakdown)
+  )
 }
 
 

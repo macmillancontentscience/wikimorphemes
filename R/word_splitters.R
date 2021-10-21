@@ -64,20 +64,38 @@ process_word <- function(word,
 #'   API) will still occur. You might want to set this value to FALSE if you've
 #'   made recent edits to Wiktionary or otherwise want to see if something has
 #'   changed recently.
+#' @param stop_at Character; a word to stop processing at. Used to help prevent
+#'   loops.
 #'
 #' @return Character; the word split into pieces.
 #' @keywords internal
 .process_word_recursive <- function(word,
                                     sight_words = default_sight_words(),
                                     use_lookup = TRUE,
-                                    current_depth = 1,
-                                    max_depth = 30) {
+                                    current_depth = 1L,
+                                    max_depth = 30L,
+                                    stop_at = NULL) {
+  # We expect word to be scalar, and things get weird if it isn't. Fix that and
+  # warn if it isn't.
+  if (length(word) > 1) {
+    warning(
+      "More than one word passed in for processing: ",
+      paste(word, collapse = "|")
+    )
+    word <- word[[1]]
+  }
+
   # If we return the original word, we want it to be a main piece, ie
   # .baseword_name, unless it already has a different name.
   names(word) <- names(word) %||% .baseword_name
 
+  # If stop_at is set and we're processing that, send it back.
+  if (!is.null(stop_at) && word == stop_at) {
+    return(word)
+  }
+
   # we never want to split short words (say, three chars or less).
-  if (nchar(word) < 4) {
+  if (nchar(word) < 4L) {
     return(word)
   }
   # If word is in sight word list, stop now
@@ -107,49 +125,87 @@ process_word <- function(word,
   # times.
   english_content <- .fetch_english_word(word)
 
-  # If there's no wikitext, return the word unbroken.
+  # If there's no wikitext, it's not a known English word. But consider breaking
+  # it!
   if (!length(english_content)) {
-    # not a known English word
-    return(.update_env_lookup(word, word, use_lookup))
-  }
+    breakdown <- .split_possessive(word)
+    if (!length(breakdown)) {
+      breakdown <- .split_on_breaks(word)
+    }
+    if (!length(breakdown)) {
+      # There's nothing to do with this word.
+      return(.update_env_lookup(word, word, use_lookup))
+    }
+  } else {
+    # 40 words have 2 wikitext entries. For now just deal with those, we'll fix
+    # that in the processor.
+    english_content <- english_content[[1]]
 
-  # 40 words have 2 wikitext entries. For now just deal with those, we'll fix
-  # that in the processor.
-  english_content <- english_content[[1]]
-
-  # First check for inflections.
-  inf_break <- .split_inflections(english_content, word)
-  if (length(inf_break) == 2) {
-    # keep processing base_word (inflection endings need no further processing)
-    pieces <- c(
-      .process_word_recursive(
-        word = inf_break[1],
+    # Check things one at a time, if the one before didn't find anything.
+    breakdown <- .split_contractions(english_content, word)
+    if (!length(breakdown)) {
+      breakdown <- .split_inflections(english_content, word)
+    }
+    if (!length(breakdown)) {
+      breakdown <- .split_morphemes(english_content, word)
+    }
+    if (!length(breakdown)) {
+      breakdown <- .check_alt_spelling(
+        wt = english_content,
+        word = word,
         sight_words = sight_words,
         use_lookup = use_lookup,
-        current_depth = current_depth + 1,
-        max_depth = max_depth
-      ),
-      inf_break[2]
-    )
-    return(.update_env_lookup(word, pieces, use_lookup))
+        current_depth = current_depth,
+        max_depth = max_depth,
+        stop_at = stop_at
+      )
+    }
+    if (!length(breakdown)) {
+      breakdown <- .check_misspelling(
+        wt = english_content,
+        word = word,
+        sight_words = sight_words,
+        use_lookup = use_lookup,
+        current_depth = current_depth,
+        max_depth = max_depth,
+        stop_at = stop_at
+      )
+    }
+    if (!length(breakdown)) {
+      breakdown <- .split_possessive(
+        word = word
+      )
+    }
+    # If we don't find anything formal, split on split characters.
+    if (!length(breakdown)) {
+      breakdown <- .split_on_breaks(word)
+    }
   }
-  # If we made it here, no inflections found. Check for morphemes...
-  mor_break <- .split_morphemes(english_content, word)
-  if (length(mor_break) > 1) {
-    # process all pieces, including prefixes, etc.
+
+  if (!is.null(stop_at) && stop_at %in% breakdown) {
+    return(stop_at)
+  }
+
+  if (length(breakdown)) {
+    breakdown <- .clean_output(breakdown)
+
     all_pieces <- purrr::map(
-      mor_break,
+      breakdown,
       .process_word_recursive,
       sight_words = sight_words,
       use_lookup = use_lookup,
-      current_depth = current_depth + 1,
-      max_depth = max_depth
+      current_depth = current_depth + 1L,
+      max_depth = max_depth,
+      stop_at = stop_at
     )
+
     processed_word <- .correct_names(all_pieces)
+    processed_word <- .fix_hyphens(processed_word)
+
     return(.update_env_lookup(word, processed_word, use_lookup))
+  } else {
+    return(.update_env_lookup(word, word, use_lookup))
   }
-  # If we made it here, neither inflections nor morphemes found.
-  return(.update_env_lookup(word, word, use_lookup))
 }
 
 # .split_inflections ------------------------------------------------------
@@ -163,12 +219,12 @@ process_word <- function(word,
 #' @keywords internal
 .split_inflections <- function(english_content, word) {
   if (length(english_content) == 0) {
-    return(word)
+    return(character(0))
   }
 
   if (.detect_irregular_wt(english_content)) {
     # for now, return irregular words without attempting to split inflections.
-    return(word) # nocov
+    return(character(0)) # nocov
   }
 
   # Wiktionary has a variety of templates for various standard endings. In some
@@ -195,6 +251,7 @@ process_word <- function(word,
     ending <- patterns_endings[[patt]]
     base_word <- stringr::str_match(english_content, patt)[[2]]
     if (!is.na(base_word)) {
+      base_word <- .clean_word_reference(base_word)
       if (.check_reconstructed_word(word, base_word, ending) &
         .check_nonexplosive_word(word, base_word, ending) &
         # word should actually end with ending. No "ridden" -> "ride -ed"!
@@ -206,7 +263,7 @@ process_word <- function(word,
     }
   }
   if (length(candidate_breakdowns) == 0) {
-    return(word)
+    return(character(0))
   }
   unique_breakdowns <- unique(candidate_breakdowns)
   # if (length(unique_breakdowns) > 1) {
@@ -214,6 +271,27 @@ process_word <- function(word,
   #   warning("more than one unique breakdown found for: ", word) # nocov
   # }
   return(unique_breakdowns[[1]])
+}
+
+#' Strip off Deep Links
+#'
+#' Words can link to specific sections. Any time we return a word, we really
+#' just care about the word, not the deeper link.
+#'
+#' @param word The word (extracted from a template, probably) to clean.
+#'
+#' @return Just the word.
+#' @keywords internal
+.clean_word_reference <- function(word) {
+  # I want this to be general-purpose, so let's not assume "word" is a single
+  # word. But we ARE assuming the names don't matter, if it has any, because
+  # every potential use of this is before we name things.
+  return(
+    purrr::map_chr(
+      word,
+      ~ stringr::str_split(.x, "#", simplify = TRUE)[[1]]
+    )
+  )
 }
 
 
@@ -227,11 +305,10 @@ process_word <- function(word,
 #' @keywords internal
 .split_morphemes <- function(english_content, word) {
   if (length(english_content) == 0) {
-    return(word) # nocov
+    return(character(0)) # nocov
   }
 
   candidate_breakdowns <- list(
-    .check_alt_spelling_wt(english_content),
     .split_affixes_wt(english_content),
     .split_prefixes_wt(english_content),
     .split_suffixes_wt(english_content),
@@ -252,7 +329,7 @@ process_word <- function(word,
   ]
 
   if (length(candidate_breakdowns) == 0) {
-    return(word)
+    return(character(0))
   }
   unique_breakdowns <- unique(candidate_breakdowns)
   # if (length(unique_breakdowns) > 1) {
@@ -285,20 +362,22 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
-  if (!is.na(match)) {
+  breakdown <- .clean_word_reference(breakdown)
+  if (!is.na(match) && length(breakdown) > 1) {
     # `breakdown` should be length-2, but template might be badly formatted.
-    if (length(breakdown) != 2) {
-      #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
-      return(character(0)) # nocov
+    names(breakdown) <- c(
+      rep(.prefix_name, (length(breakdown) - 1)),
+      .baseword_name
+    )
+    if (stringr::str_ends(breakdown[[length(breakdown)]], "\\-")) {
+      names(breakdown)[[length(breakdown)]] <- .prefix_name
     }
-    # At this point in the process, apply standard that prefixes end in "-"
-    breakdown[[1]] <- paste0(breakdown[[1]], "-")
-    names(breakdown) <- c(.prefix_name, .baseword_name)
-    # standardize naming:
-    # https://github.com/macmillancontentscience/wikimorphemes/issues/7
+
+    breakdown <- .fix_hyphens(breakdown)
+    return(breakdown)
   }
 
-  return(breakdown)
+  return(character(0))
 }
 
 
@@ -325,26 +404,21 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
-  if (!is.na(match)) {
+  breakdown <- .clean_word_reference(breakdown)
+  if (!is.na(match) && length(breakdown)) {
     # `breakdown` should be length-2, but template might be badly formatted.
-    if (length(breakdown) != 2) {
-      #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
-      return(character(0)) # nocov
-    }
-    # At this point in the process, apply standard that suffixes begin with "-"
-    breakdown[[2]] <- paste0("-", breakdown[[2]])
-    # It is *possible* that a suffix has further suffix breakdowns, e.g.
-    # "-ization" -> "-ize" + "-ation"
-    # If the original word starts with a hyphen, tag it as a suffix rather than
-    # as a base word.
-    names(breakdown) <- c(.baseword_name, .suffix_name)
+    names(breakdown) <- c(
+      .baseword_name,
+      rep(.suffix_name, (length(breakdown) - 1))
+    )
     if (stringr::str_starts(breakdown[[1]], "\\-")) {
-      names(breakdown) <- c(.suffix_name, .suffix_name)
+      names(breakdown)[[1]] <- .suffix_name
     }
-    # standardize naming:
-    # https://github.com/macmillancontentscience/wikimorphemes/issues/7
+    breakdown <- .fix_hyphens(breakdown)
+    return(breakdown)
   }
-  return(breakdown)
+
+  return(character(0))
 }
 
 
@@ -372,6 +446,7 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
+  breakdown <- .clean_word_reference(breakdown)
   # https://github.com/macmillancontentscience/wikimorphemes/issues/10
   if (!is.na(match)) {
     # This one is tricky. If a piece ends with "-", assign name "prefix". If
@@ -416,6 +491,7 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
+  breakdown <- .clean_word_reference(breakdown)
   # https://github.com/macmillancontentscience/wikimorphemes/issues/10
   if (!is.na(match)) {
     # if only two pieces, should be prefix + suffix
@@ -468,6 +544,7 @@ process_word <- function(word,
     string = breakdown,
     pattern = "=", negate = TRUE
   )
+  breakdown <- .clean_word_reference(breakdown)
   # https://github.com/macmillancontentscience/wikimorphemes/issues/10
   if (!is.na(match)) {
     # all components should be tagged as base words
@@ -479,52 +556,281 @@ process_word <- function(word,
 }
 
 
+# .split_contractions_wt ------------------------------------------------------
 
-
-# .check_alt_spelling_wt ------------------------------------------------------
-
-#' Check for Simpler Alternative Spelling
-#'
-#' Checks the wikitext for an alternative spelling that breaks the word up into
-#' smaller pieces (e.g. "passerby" -> "passer-by").
+#' Split Contractions
 #'
 #' @param wt Character; wikitext of a word
+#' @param word Character; the word.
 #'
 #' @return Character; the word split up into component words.
 #' @keywords internal
-.check_alt_spelling_wt <- function(wt) {
-  # wt <- .fetch_english_word("passerby")
-  # wt <- .fetch_english_word("clearinghouse")
+.split_contractions <- function(wt, word) {
+  # word <- "'twas"
+  # word <- "'twasn't"
+  # word <- "they're"
+  # word <- "would've"
+  # word <- "wouldn't"
+  # word <- "wouldn't've"
+  # word <- "'dillo"
+  # word <- "wouldn't"
+  # word <- "wouldn't've"
+  # wt <- .fetch_english_word(word)
+
+  # Only process contractions if the word still contains an apostrophe,
+  # otherwise it might be a historical contraction that's weird now.
+  if (stringr::str_detect(word, "'")) {
+    # There are two contraction patterns: 1 in the etymology, 1 in the
+    # definition. If a word has both, we want the etymology one.
+    patt <- .make_template_pattern("contraction")
+    match <- stringr::str_match_all(wt, patt)[[1]]
+
+    # If that one didn't work, try the other one.
+    if (nrow(match) == 0) {
+      patt <- .make_template_pattern("contraction of")
+      match <- stringr::str_match_all(wt, patt)[[1]]
+    }
+
+    # If there's exactly one contraction for this word, clean it up and return
+    # it.
+    if (nrow(match) == 1) {
+      match <- match[[2]]
+
+      # There are a couple ways to use these templates, so make sure we deal
+      # with all of them.
+      breakdown <- stringr::str_split(
+        string = match,
+        pattern = stringr::coll("|")
+      )[[1]]
+      # Take out named parameters (marked with "=").
+      breakdown <- stringr::str_subset(
+        string = breakdown,
+        pattern = "=", negate = TRUE
+      )
+
+      # Sometimes the words are wrapped in [[]], sometimes they aren't. As far
+      # as I've seen it's either [[]] *or* | so this should catch things
+      # properly.
+      if (stringr::str_detect(breakdown[[1]], stringr::fixed("["))) {
+        breakdown <- stringr::str_match_all(
+          breakdown[[1]],
+          pattern = "\\[\\[([^]]+)\\]\\]"
+        )[[1]][, 2]
+      }
+
+      breakdown <- .clean_word_reference(breakdown)
+
+      breakdown <- breakdown[
+        purrr::map_lgl(breakdown, function(bd) {
+          .check_nonexplosive_word(word, bd)
+        })
+      ]
+
+      if (length(breakdown)) {
+        # all components should be tagged as base words
+        names(breakdown) <- rep(.baseword_name, length(breakdown))
+        return(breakdown)
+      }
+    }
+  }
+
+  return(character(0))
+}
+
+# .check_alt_spelling ------------------------------------------------------
+
+#' Check for Alternative Spelling
+#'
+#' Checks the wikitext for an alternative spelling.
+#'
+#' @inheritParams .process_word_recursive
+#' @param wt Character; wikitext of a word
+#' @param word Character; the word, to make sure this isn't a loop.
+#'
+#' @return Character; the first-level of the alternate word or words.
+#' @keywords internal
+.check_alt_spelling <- function(wt,
+                                word,
+                                sight_words,
+                                use_lookup,
+                                current_depth,
+                                max_depth,
+                                stop_at) {
+  # word <- "passerby"
+  # word <- "clearinghouse"
+  # word <- "metaanalysis"
+  # word <- "auroch"
+  # wt <- .fetch_english_word(word)
+
   # Maybe also catch "alternative form of" here?
   asp_patt <- .make_template_pattern("alternative spelling of")
   match <- stringr::str_match(wt, asp_patt)[[2]]
   # First split out the template parameters.
-  breakdown <- stringr::str_split(
+  alt_word <- stringr::str_split(
     string = match,
     pattern = stringr::coll("|")
   )[[1]]
   # Take out named parameters (marked with "=").
-  breakdown <- stringr::str_subset(
-    string = breakdown,
+  alt_word <- stringr::str_subset(
+    string = alt_word,
     pattern = "=", negate = TRUE
   )
-  # Alternative spelling is "simpler" if there's a space or hyphen.
-  # TODO Decide whether there are other cases we want to take alt. spelling.
-  if (isTRUE(stringr::str_detect(string = breakdown, pattern = "\\s|\\-"))) {
-    breakdown <- stringr::str_split(
-      string = breakdown,
-      pattern = "\\s|\\-"
-    )[[1]]
-    # all components should be tagged as base words
-    names(breakdown) <- rep(.baseword_name, length(breakdown))
-    return(breakdown)
+  alt_word <- .clean_word_reference(alt_word)
+
+  if (length(alt_word)) {
+    stop_at <- stop_at %||% word
+    # Conceivably it could be an alternative spelling of more than one thing.
+    # Let's just use the first one. It can also have parts that are descriptions
+    # of the relationship, such as this from pause: "Pause||a button that pauses
+    # or resumes something"
+    alt_word <- alt_word[[1]]
+
+    breakdown <- .process_word_recursive(
+      word = alt_word,
+      sight_words = sight_words,
+      use_lookup = use_lookup,
+      current_depth = current_depth + 1L,
+      max_depth = max_depth,
+      stop_at = stop_at
+    )
+
+    # Just send the alternative form through to be re-processed.
+    if (
+      length(breakdown) && .check_nonexplosive_word(word, breakdown)) {
+      return(breakdown)
+    }
   }
+
+  #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
+  return(character(0))
+}
+
+
+# .check_misspelling_wt ------------------------------------------------------
+
+#' Check for Misspelling
+#'
+#' Checks the wikitext to see if this is a misspelling of another word.
+#'
+#' @inheritParams .process_word_recursive
+#' @param wt Character; wikitext of a word
+#' @param word Character; the word, to make sure we don't loop.
+#'
+#' @return Character; the better spelling of the word.
+#' @keywords internal
+.check_misspelling <- function(wt,
+                               word,
+                               sight_words,
+                               use_lookup,
+                               current_depth,
+                               max_depth,
+                               stop_at) {
+  # word <- "twas"
+  # word <- "abhoring"
+  # word <- "prejudice"
+  # wt <- .fetch_english_word(word)
+  patt <- .make_template_pattern("misspelling of")
+  match <- stringr::str_match(wt, patt)[[2]]
+  # First split out the template parameters.
+  alt_word <- stringr::str_split(
+    string = match,
+    pattern = stringr::coll("|")
+  )[[1]]
+  # Take out named parameters (marked with "=").
+  alt_word <- stringr::str_subset(
+    string = alt_word,
+    pattern = "=", negate = TRUE
+  )
+  alt_word <- .clean_word_reference(alt_word)
+
+  if (length(alt_word)) {
+    stop_at <- stop_at %||% word
+    # Conceivably it could be a misspelling of more than one thing.
+    # Let's just use the first one.
+    alt_word <- alt_word[[1]]
+
+    breakdown <- .process_word_recursive(
+      word = alt_word,
+      sight_words = sight_words,
+      use_lookup = use_lookup,
+      current_depth = current_depth + 1L,
+      max_depth = max_depth,
+      stop_at = stop_at
+    )
+
+    # Send the breakdown through to be re-processed.
+    if (length(breakdown) && .check_nonexplosive_word(word, breakdown)) {
+      return(breakdown)
+    }
+  }
+
   #  https://github.com/macmillancontentscience/wikimorphemes/issues/10
   return(character(0))
 }
 
 
 
+#' Split the Possessive s
+#'
+#' This is probably not exhaustive, and could potentially have some false
+#' positives, but it should only happen when templates fail us so I think it
+#' will usually be correct.
+#'
+#' @param word The word to split.
+#'
+#' @return The word, split into word + -'s if it is possessive.
+#' @keywords internal
+.split_possessive <- function(word) {
+  if (
+    stringr::str_detect(word, "^[^']+'s$") ||
+    stringr::str_detect(word, "^[^']+[sx]'$")
+  ) {
+    breakdown <- stringr::str_split(
+      word,
+      "'"
+    )[[1]][[1]]
+    breakdown <- c(
+      breakdown,
+      "-'s"
+    )
+    # I'm calling this a suffix but it's really a particle, I think?
+    names(breakdown) <- c(names(word), "suffix")
+    return(breakdown)
+  }
+  return(character(0))
+}
+
+#' Split on Break Characters
+#'
+#' This is a fall-through if nothing else breaks the word down.
+#'
+#' @param word The word to potentially break down.
+#'
+#' @return The breakdown, if there are break characters.
+#' @keywords internal
+.split_on_breaks <- function(word) {
+  # This is more complicated than it appears, because we want to keep "-" at the
+  # beginning or end of the word.
+  if (stringr::str_detect(word, "[^ -][ -][^ -]")) {
+    breakdown <- stringr::str_split(
+      word,
+      "[ -]"
+    )
+    breakdown <- .clean_output(breakdown)
+    if (stringr::str_starts(word, "-")) {
+      breakdown[[1]] <- paste0("-", breakdown[[1]])
+    }
+    if (stringr::str_ends(word, "-")) {
+      breakdown[[length(breakdown)]] <- paste0(
+        breakdown[[length(breakdown)]],
+        "-"
+      )
+    }
+    names(breakdown) <- rep(names(word), length(breakdown))
+    return(breakdown)
+  }
+  return(character(0))
+}
 
 # .clean_output ------------------------------------------------------
 
@@ -545,17 +851,29 @@ process_word <- function(word,
   # This also takes care of the problem of infinitely recursing on, e.g.,
   # "cyber-" due to empty string after the hyphen.
 
-  # we *don't* want to remove hyphens at this point, as they are used to
-  # indicate affixes.
+  # I'm pretty sure we just want to split on space now.
   split_more <- unlist(
     purrr::map(
       split_word,
       stringr::str_split,
-      pattern = "[^[:alpha:]\\-]"
+      pattern = "\\s+"
     ),
     use.names = TRUE
   )
-  split_more <- split_more[split_more != ""]
+
+  # we *don't* want to remove hyphens at this point, as they are used to
+  # indicate affixes.
+  # split_more <- unlist(
+  #   purrr::map(
+  #     split_word,
+  #     stringr::str_split,
+  #     pattern = "[^[:alpha:]\\-]"
+  #   ),
+  #   use.names = TRUE
+  # )
+  # # Get rid of weird things generated during the additional split.
+  split_more <- split_more[!(split_more %in% c("", "-"))]
+
   # we're a little naughty and use non-unique names.
   names(split_more) <- stringr::str_remove_all(names(split_more), "[0-9]")
   return(split_more)
