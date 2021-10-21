@@ -596,10 +596,12 @@ process_word <- function(word,
         pattern = "=", negate = TRUE
       )
 
-      # Sometimes the words are wrapped in [[]], sometimes they aren't.
-      if (stringr::str_detect(breakdown, stringr::fixed("["))) {
+      # Sometimes the words are wrapped in [[]], sometimes they aren't. As far
+      # as I've seen it's either [[]] *or* | so this should catch things
+      # properly.
+      if (stringr::str_detect(breakdown[[1]], stringr::fixed("["))) {
         breakdown <- stringr::str_match_all(
-          breakdown,
+          breakdown[[1]],
           pattern = "\\[\\[([^]]+)\\]\\]"
         )[[1]][, 2]
       }
