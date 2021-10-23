@@ -285,30 +285,28 @@
           this_page,
           stringr::regex("<text.+</text>", dotall = TRUE)
         )
-        if (is.na(this_wt)) {
-          stop("No <text> at row ", i)
-        }
-
-        this_entry <- .extract_relevant_english_wt(this_wt)
-        if (length(this_entry)) {
-          title <- xml2::xml_text(
-            xml2::xml_find_first(
-              this_xml,
-              ".//title"
+        if (!is.na(this_wt)) {
+          this_entry <- .extract_relevant_english_wt(this_wt)
+          if (length(this_entry)) {
+            title <- xml2::xml_text(
+              xml2::xml_find_first(
+                this_xml,
+                ".//title"
+              )
             )
-          )
-          sha1 <- xml2::xml_text(
-            xml2::xml_find_first(
-              this_xml,
-              ".//sha1"
+            sha1 <- xml2::xml_text(
+              xml2::xml_find_first(
+                this_xml,
+                ".//sha1"
+              )
             )
-          )
-          word_info[[i]] <- data.frame(
-            row_n = i,
-            word = title,
-            wikitext = this_entry,
-            sha1 = sha1
-          )
+            word_info[[i]] <- data.frame(
+              row_n = i,
+              word = title,
+              wikitext = this_entry,
+              sha1 = sha1
+            )
+          }
         }
       }
     }
