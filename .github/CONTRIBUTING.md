@@ -10,11 +10,11 @@ Before you start working on a larger contribution, you should get in touch with 
 
 We use the github [fork and pull review process](https://help.github.com/articles/using-pull-requests) to review all contributions. First, fork the repository by following the [github instructions](https://help.github.com/articles/fork-a-repo). Then check out your personal fork:
 
-    $ git clone https://github.com/<username>/morphemepiece.git
+    $ git clone https://github.com/<username>/wikimorphemes.git
 
 Add an upstream remote so you can easily keep up to date with the main repository:
 
-    $ git remote add upstream https://github.com/jonathanbratt/morphemepiece.git
+    $ git remote add upstream https://github.com/macmillancontentscience/wikimorphemes.git
 
 To update your local repo from the main:
 
