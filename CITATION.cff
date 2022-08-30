@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+title: wikimorphemes
+message: >-
+  Please cite this package using the metadata from this file.
+type: software
+authors:
+  - given-names: Jon
+    family-names: Harmon
+    email: jonthegeek@gmail.com
+    orcid: 'https://orcid.org/0000-0003-4781-4346'
+    affiliation: Macmillan Learning
+  - given-names: Jonathan
+    family-names: Bratt
+    email: jonathan.bratt@macmillan.com
+    affiliation: Macmillan Learning
+    orcid: 'https://orcid.org/0000-0003-2859-0076'
+url: >-
+  https://github.com/macmillancontentscience/wikimorphemes
+abstract: >-
+  Morphemes are the smallest linguistic units within
+  words that can carry meaning. Wiktionary (the free
+  dictionary) has a wealth of human-tagged
+  information about morphemes. This package seeks to
+  extract that information.
+keywords:
+  - morpheme
+  - tokenizer
+  - natural language processing
+license: Apache-2.0
+version: 0.3.0
